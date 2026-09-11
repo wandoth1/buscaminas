@@ -7,7 +7,7 @@ Segunda versión del clásico **Buscaminas**, reescrita íntegramente desde cero
 ## 🚀 Cómo Jugar
 
 ### 🪟 En Windows:
-- Entra en la carpeta **[`windows/`](windows/)** y haz doble clic en **`Buscaminas_v2.exe`** (también disponible en la raíz y en **[Releases](https://github.com/wandoth1/buscaminas/releases)**).
+- Entra en la carpeta **[`windows/`](windows/)** y haz doble clic en **`Buscaminas_v2.exe`** (o descárgalo desde **[Releases](https://github.com/wandoth1/buscaminas/releases)**).
 - No requiere instalar Rust, Python ni dependencias externas.
 
 ### 🍎 En macOS:

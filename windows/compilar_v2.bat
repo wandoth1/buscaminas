@@ -1,6 +1,6 @@
 @echo off
 title Compilar Buscaminas v2 (Rust)
-cd /d "%~dp0"
+cd /d "%~dp0.."
 
 echo ========================================================
 echo   Compilando Buscaminas v2 en Rust (Release)...
@@ -17,11 +17,11 @@ if %ERRORLEVEL% neq 0 (
 
 cargo build --release
 if %ERRORLEVEL% equ 0 (
-    copy /y "target\release\buscaminas_v2_rust.exe" "Buscaminas_v2.exe"
+    copy /y "target\release\buscaminas_v2_rust.exe" "windows\Buscaminas_v2.exe"
     echo.
     echo ========================================================
     echo   Compilacion exitosa!
-    echo   Ejecutable: Buscaminas_v2.exe
+    echo   Ejecutable: windows\Buscaminas_v2.exe
     echo ========================================================
 ) else (
     echo.
