@@ -49,6 +49,17 @@ impl HighScoreManager {
             .ok()
             .and_then(|p| p.parent().map(|p| p.to_path_buf()))
             .unwrap_or_else(|| PathBuf::from("."));
+
+        #[cfg(target_os = "macos")]
+        let file_path = if let Ok(home) = std::env::var("HOME") {
+            let app_support = PathBuf::from(home).join("Library").join("Application Support").join("Buscaminas");
+            let _ = std::fs::create_dir_all(&app_support);
+            app_support.join("mejores_tiempos_v2.json")
+        } else {
+            exe_dir.join("mejores_tiempos_v2.json")
+        };
+
+        #[cfg(not(target_os = "macos"))]
         let file_path = exe_dir.join("mejores_tiempos_v2.json");
 
         let mut mgr = Self {

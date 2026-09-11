@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 
 mod constants;
 mod engine;
@@ -31,7 +31,7 @@ async fn main() {
     let (init_cols, init_rows, init_mines) = current_diff.config();
 
     let mut board = Board::new(init_cols, init_rows, init_mines);
-    let mut sound = SoundManager::new();
+    let mut sound = SoundManager::new().await;
     let mut highscores = HighScoreManager::new();
     let mut menu_bar = MenuBar::new();
     let mut dialog = DialogState::None;

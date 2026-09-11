@@ -1,17 +1,18 @@
 use std::f32::consts::PI;
+use macroquad::audio::{load_sound_from_bytes, play_sound_once, Sound};
 
 pub struct SoundManager {
     pub enabled: bool,
-    sound_click: Vec<u8>,
-    sound_flag: Vec<u8>,
-    sound_unflag: Vec<u8>,
-    sound_chord: Vec<u8>,
-    sound_lose: Vec<u8>,
-    sound_win: Vec<u8>,
+    sound_click: Sound,
+    sound_flag: Sound,
+    sound_unflag: Sound,
+    sound_chord: Sound,
+    sound_lose: Sound,
+    sound_win: Sound,
 }
 
 impl SoundManager {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let sample_rate = 22050;
 
         // 1. Click (35ms seco)
@@ -24,7 +25,7 @@ impl SoundManager {
             let freq = 900.0 - 300.0 * (t / click_dur);
             click_samples.push((2.0 * PI * freq * t).sin() * decay * 0.7);
         }
-        let sound_click = make_wav(&click_samples, sample_rate);
+        let sound_click_raw = make_wav(&click_samples, sample_rate);
 
         // 2. Flag (50ms pop ascendente)
         let flag_dur = 0.050;
@@ -36,7 +37,7 @@ impl SoundManager {
             let freq = 450.0 + 650.0 * (t / flag_dur);
             flag_samples.push((2.0 * PI * freq * t).sin() * decay * 0.75);
         }
-        let sound_flag = make_wav(&flag_samples, sample_rate);
+        let sound_flag_raw = make_wav(&flag_samples, sample_rate);
 
         // 3. Unflag (45ms pop descendente)
         let unflag_dur = 0.045;
@@ -48,7 +49,7 @@ impl SoundManager {
             let freq = 800.0 - 400.0 * (t / unflag_dur);
             unflag_samples.push((2.0 * PI * freq * t).sin() * decay * 0.6);
         }
-        let sound_unflag = make_wav(&unflag_samples, sample_rate);
+        let sound_unflag_raw = make_wav(&unflag_samples, sample_rate);
 
         // 4. Chord (75ms doble chasquido)
         let chord_dur = 0.075;
@@ -61,7 +62,7 @@ impl SoundManager {
             let val = (2.0 * PI * 650.0 * t).sin() * d1 + (2.0 * PI * 1050.0 * t).sin() * d2;
             chord_samples.push(val * 0.5);
         }
-        let sound_chord = make_wav(&chord_samples, sample_rate);
+        let sound_chord_raw = make_wav(&chord_samples, sample_rate);
 
         // 5. Lose / Explosion (650ms ruido y subgrave)
         let lose_dur = 0.65;
@@ -78,7 +79,7 @@ impl SoundManager {
             let rumble2 = (2.0 * PI * 45.0 * t).sin() * 0.35;
             lose_samples.push((noise + rumble1 + rumble2) * decay * 0.8);
         }
-        let sound_lose = make_wav(&lose_samples, sample_rate);
+        let sound_lose_raw = make_wav(&lose_samples, sample_rate);
 
         // 6. Win (Fanfarria musical C5, E5, G5, C6)
         let freqs = [523.25, 659.25, 783.99, 1046.50];
@@ -100,7 +101,14 @@ impl SoundManager {
                 }
             }
         }
-        let sound_win = make_wav(&win_samples, sample_rate);
+        let sound_win_raw = make_wav(&win_samples, sample_rate);
+
+        let sound_click = load_sound_from_bytes(&sound_click_raw).await.expect("Failed to load click sound");
+        let sound_flag = load_sound_from_bytes(&sound_flag_raw).await.expect("Failed to load flag sound");
+        let sound_unflag = load_sound_from_bytes(&sound_unflag_raw).await.expect("Failed to load unflag sound");
+        let sound_chord = load_sound_from_bytes(&sound_chord_raw).await.expect("Failed to load chord sound");
+        let sound_lose = load_sound_from_bytes(&sound_lose_raw).await.expect("Failed to load lose sound");
+        let sound_win = load_sound_from_bytes(&sound_win_raw).await.expect("Failed to load win sound");
 
         Self {
             enabled: true,
@@ -113,34 +121,18 @@ impl SoundManager {
         }
     }
 
-    fn play_raw(&self, wav_data: &[u8]) {
-        if !self.enabled {
-            return;
-        }
-        #[cfg(target_os = "windows")]
-        unsafe {
-            #[link(name = "winmm")]
-            unsafe extern "system" {
-                fn PlaySoundW(pszSound: *const u16, hmod: *mut std::ffi::c_void, fdwSound: u32) -> i32;
-            }
-            const SND_ASYNC: u32 = 0x0001;
-            const SND_NODEFAULT: u32 = 0x0002;
-            const SND_MEMORY: u32 = 0x0004;
-
-            PlaySoundW(
-                wav_data.as_ptr() as *const u16,
-                std::ptr::null_mut(),
-                SND_ASYNC | SND_NODEFAULT | SND_MEMORY,
-            );
+    fn play_sound(&self, sound: &Sound) {
+        if self.enabled {
+            play_sound_once(sound);
         }
     }
 
-    pub fn play_click(&self) { self.play_raw(&self.sound_click); }
-    pub fn play_flag(&self) { self.play_raw(&self.sound_flag); }
-    pub fn play_unflag(&self) { self.play_raw(&self.sound_unflag); }
-    pub fn play_chord(&self) { self.play_raw(&self.sound_chord); }
-    pub fn play_lose(&self) { self.play_raw(&self.sound_lose); }
-    pub fn play_win(&self) { self.play_raw(&self.sound_win); }
+    pub fn play_click(&self) { self.play_sound(&self.sound_click); }
+    pub fn play_flag(&self) { self.play_sound(&self.sound_flag); }
+    pub fn play_unflag(&self) { self.play_sound(&self.sound_unflag); }
+    pub fn play_chord(&self) { self.play_sound(&self.sound_chord); }
+    pub fn play_lose(&self) { self.play_sound(&self.sound_lose); }
+    pub fn play_win(&self) { self.play_sound(&self.sound_win); }
 
     pub fn toggle(&mut self) -> bool {
         self.enabled = !self.enabled;

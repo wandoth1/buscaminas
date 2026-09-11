@@ -1,20 +1,21 @@
-# 🦀 Buscaminas v2 (Edición Rust)
+# 🦀 Buscaminas v2 (Rust - Windows & macOS)
 
-Segunda versión del clásico **Buscaminas** para Windows, reescrita íntegramente desde cero en **Rust** para lograr máximo rendimiento nativo, consumo mínimo de memoria RAM (< 15 MB), aceleración por hardware a 60+ FPS y un ejecutable único standalone de menos de 1 MB.
+Segunda versión del clásico **Buscaminas**, reescrita íntegramente desde cero en **Rust** para lograr compatibilidad multiplataforma nativa (**Windows** y **macOS** - Apple Silicon M1/M2/M3/M4 e Intel), máximo rendimiento, consumo mínimo de memoria RAM (< 15 MB), aceleración gráfica por GPU a 60+ FPS y audio procedural sin latencia.
 
 ---
 
 ## 🚀 Cómo Jugar
 
-Simplemente haz doble clic en:
-- **`Buscaminas_v2.exe`** (incluido en la raíz del repositorio o en la sección de Releases).
+### En Windows:
+- Haz doble clic en **`Buscaminas_v2.exe`** (disponible en la raíz del repositorio o en la pestaña de **[Releases](https://github.com/wandoth1/buscaminas/releases)**).
+- No requiere instalar Rust ni dependencias externas.
 
-No requiere tener Rust ni Python instalados para jugar, y al ser una aplicación GUI pura de Windows, no abre ninguna consola negra.
-
-Si deseas ejecutar desde el código fuente con Cargo:
-```bash
-cargo run --release
-```
+### En macOS:
+- Descarga **`Buscaminas-macOS-Universal.zip`** desde la sección de **[Releases](https://github.com/wandoth1/buscaminas/releases)**, descomprímelo y haz doble clic sobre **`Buscaminas.app`** (funciona tanto en Macs con Apple Silicon como Intel).
+- Si usas terminal o desarrollas en Mac, ejecuta directamente con Cargo:
+  ```bash
+  cargo run --release
+  ```
 
 ---
 
@@ -32,8 +33,8 @@ cargo run --release
      - 💥 Explosión con dispersión de fragmentos al pisar una mina.
    - **Screen Shake (Temblor de pantalla)**: Breve sacudida dinámica de la interfaz al detonar una mina.
    - Tecla rápida `P` o menú *Opciones* para activar/desactivar partículas si lo prefieres.
-4. **Audio Nativo de Windows**:
-   - Sintetizador procedural en memoria integrado con la API multimedia de Windows (`winmm / PlaySoundW`) con reproducción asíncrona sin latencia.
+4. **Audio Nativo Multiplataforma**:
+   - Sintetizador procedural en memoria sin archivos externos, integrado con los subsistemas nativos de audio de cada sistema operativo (`CoreAudio` en macOS, `WASAPI` en Windows) con reproducción polifónica y sin latencia.
 5. **Mecánicas Clásicas Fieles**:
    - **Primer clic seguro garantizado**: Nunca perderás en tu primera jugada; siempre abre una isla inicial despejada.
    - **Chording profesional**: Usa el botón central del ratón, o el doble clic, o ambos botones (izq + der) a la vez en un número para despejar casillas adyacentes rápidamente.
