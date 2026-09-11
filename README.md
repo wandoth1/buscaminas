@@ -6,13 +6,14 @@ Segunda versión del clásico **Buscaminas**, reescrita íntegramente desde cero
 
 ## 🚀 Cómo Jugar
 
-### En Windows:
-- Haz doble clic en **`Buscaminas_v2.exe`** (disponible en la raíz del repositorio o en la pestaña de **[Releases](https://github.com/wandoth1/buscaminas/releases)**).
-- No requiere instalar Rust ni dependencias externas.
+### 🪟 En Windows:
+- Entra en la carpeta **[`windows/`](windows/)** y haz doble clic en **`Buscaminas_v2.exe`** (también disponible en la raíz y en **[Releases](https://github.com/wandoth1/buscaminas/releases)**).
+- No requiere instalar Rust, Python ni dependencias externas.
 
-### En macOS:
-- Descarga **`Buscaminas-macOS-Universal.zip`** desde la sección de **[Releases](https://github.com/wandoth1/buscaminas/releases)**, descomprímelo y haz doble clic sobre **`Buscaminas.app`** (funciona tanto en Macs con Apple Silicon como Intel).
-- Si usas terminal o desarrollas en Mac, ejecuta directamente con Cargo:
+### 🍎 En macOS:
+- Entra en la carpeta **[`macos/`](macos/)** donde tienes la app nativa **`Buscaminas.app`** y el archivo **`Buscaminas-macOS.zip`** (también en **[Releases](https://github.com/wandoth1/buscaminas/releases)**).
+- Funciona tanto en Macs con **Apple Silicon (M1/M2/M3/M4)** como con **Intel**.
+- Si ejecutas desde terminal con Cargo:
   ```bash
   cargo run --release
   ```
