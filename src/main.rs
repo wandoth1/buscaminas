@@ -388,38 +388,48 @@ async fn main() {
                         }
                     }
                 }
-
-                mouse_left_down = false;
             }
 
-            if is_mouse_button_released(MouseButton::Right) {
-                mouse_right_down = false;
-            }
-            if is_mouse_button_released(MouseButton::Middle) && mouse_middle_down {
-                if let Some((r, c)) = hovered_cell {
-                    match board.chord(r, c, now) {
-                        RevealResult::Mine(mr, mc) => {
-                            sound.play_lose();
-                            shake_timer = 0.35;
-                            if particles_enabled {
-                                let cx = board_x + mc as f32 * CELL_SIZE + CELL_SIZE / 2.0;
-                                let cy = board_y + mr as f32 * CELL_SIZE + CELL_SIZE / 2.0;
-                                particles.spawn_explosion(cx, cy, 35);
-                            }
+            if is_mouse_button_released(MouseButton::Middle)
+                && mouse_middle_down
+                && let Some((r, c)) = hovered_cell
+            {
+                match board.chord(r, c, now) {
+                    RevealResult::Mine(mr, mc) => {
+                        sound.play_lose();
+                        shake_timer = 0.35;
+                        if particles_enabled {
+                            let cx = board_x + mc as f32 * CELL_SIZE + CELL_SIZE / 2.0;
+                            let cy = board_y + mr as f32 * CELL_SIZE + CELL_SIZE / 2.0;
+                            particles.spawn_explosion(cx, cy, 35);
                         }
-                        RevealResult::Win(_) => {
-                            sound.play_win();
-                            if particles_enabled {
-                                particles.spawn_confetti(screen_w / 2.0, board_y + 20.0, 70);
-                            }
-                            check_and_prompt_record(&board, current_diff, &highscores, &mut dialog);
-                        }
-                        RevealResult::Ok(_) => sound.play_chord(),
-                        RevealResult::None => {}
                     }
+                    RevealResult::Win(_) => {
+                        sound.play_win();
+                        if particles_enabled {
+                            particles.spawn_confetti(screen_w / 2.0, board_y + 20.0, 70);
+                        }
+                        check_and_prompt_record(&board, current_diff, &highscores, &mut dialog);
+                    }
+                    RevealResult::Ok(_) => sound.play_chord(),
+                    RevealResult::None => {}
                 }
-                mouse_middle_down = false;
             }
+        }
+
+        // Las transiciones de "soltar" se registran siempre, aunque el tablero
+        // este bloqueado: un boton soltado sobre el desplegable no debe quedarse
+        // marcado como pulsado, porque falsearia el chording posterior y volveria
+        // a dar por valido un release sin pulsacion propia.
+        if is_mouse_button_released(MouseButton::Left) {
+            mouse_left_down = false;
+            smiley_pressed = false;
+        }
+        if is_mouse_button_released(MouseButton::Right) {
+            mouse_right_down = false;
+        }
+        if is_mouse_button_released(MouseButton::Middle) {
+            mouse_middle_down = false;
         }
 
         // Celdas presionadas para chording
