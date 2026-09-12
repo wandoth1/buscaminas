@@ -1,18 +1,30 @@
-# 🍎 Buscaminas v2 para macOS
+# 🍎 Buscaminas v2.2 para macOS
 
-Aplicación nativa para macOS empaquetada como **Universal Binary** (compatible tanto con procesadores **Apple Silicon M1/M2/M3/M4** como con **Macs con procesador Intel**).
+La versión de macOS se genera como **Universal Binary**, compatible con **Apple Silicon** e **Intel**.
 
-## 🚀 Cómo jugar
+## Instalación
 
-### Opción 1: Archivo Comprimido (Recomendado)
-1. Descomprime **`Buscaminas-macOS.zip`**.
-2. Haz doble clic en **`Buscaminas.app`** (o arrástralo a tu carpeta `/Applications`).
-3. ¡Listo para jugar!
+1. Descarga `Buscaminas-macOS-Universal.zip` desde GitHub Releases.
+2. Descomprime el archivo.
+3. Mueve `Buscaminas.app` a `/Applications` si quieres instalarlo.
+4. Abre la aplicación.
 
-*(Nota de macOS: La primera vez que abras una aplicación no firmada con certificado de pago de Apple Developer, si Gatekeeper muestra un aviso de seguridad, haz clic derecho o Control + clic sobre `Buscaminas.app` > **Abrir** > **Abrir**).*
+## Gatekeeper
 
-### Opción 2: Ejecutar desde terminal con Cargo
-Si tienes Rust instalado en tu Mac:
+El workflow público aplica una firma ad-hoc para verificar la integridad del bundle, pero la aplicación no está firmada con **Developer ID** ni notarizada por Apple. macOS puede bloquear inicialmente una copia descargada de Internet.
+
+Para una distribución pública sin avisos de Gatekeeper es necesario configurar un certificado Apple Developer ID y notarización en GitHub Actions.
+
+## Ejecutar desde código
+
+Si tienes Rust instalado:
+
 ```bash
 cargo run --release
+```
+
+Los mejores tiempos se guardan en:
+
+```text
+~/Library/Application Support/Buscaminas/mejores_tiempos_v2.json
 ```
