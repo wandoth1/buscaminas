@@ -1,4 +1,4 @@
-# 🦀 Buscaminas v2.2.1 (Rust · Windows & macOS)
+# 🦀 Buscaminas v2.2.2 (Rust · Windows & macOS)
 
 Versión del clásico **Buscaminas** reescrita en **Rust** con Macroquad. El mismo código fuente se compila de forma nativa para **Windows** y **macOS**, incluyendo un binario universal para **Apple Silicon e Intel**.
 

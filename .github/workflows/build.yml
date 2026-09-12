@@ -53,6 +53,26 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
+      - name: Resolve version from Cargo.toml
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo_version="$(grep -m1 -E '^version = ' Cargo.toml | cut -d '"' -f 2 || true)"
+          if [ -z "$cargo_version" ]; then
+            echo "::error::No se pudo leer la version de Cargo.toml"
+            exit 1
+          fi
+          if [ "${GITHUB_REF}" != "${GITHUB_REF#refs/tags/v}" ]; then
+            tag_version="${GITHUB_REF#refs/tags/v}"
+            if [ "$tag_version" != "$cargo_version" ]; then
+              echo "::error::La etiqueta v${tag_version} no coincide con Cargo.toml (${cargo_version})"
+              exit 1
+            fi
+          fi
+          echo "value=${cargo_version}" >> "$GITHUB_OUTPUT"
+          echo "Version de la compilacion: ${cargo_version}"
+
       - name: Build for Apple Silicon (aarch64)
         run: cargo build --locked --release --target aarch64-apple-darwin
 
@@ -106,9 +126,9 @@ jobs:
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>CFBundleShortVersionString</key>
-              <string>2.2.1</string>
+              <string>${{ steps.version.outputs.value }}</string>
               <key>CFBundleVersion</key>
-              <string>2.2.1</string>
+              <string>${{ steps.version.outputs.value }}</string>
               <key>LSMinimumSystemVersion</key>
               <string>10.13</string>
               <key>NSHighResolutionCapable</key>

@@ -205,7 +205,7 @@ impl MenuBar {
                 Item {
                     action: Some(MenuAction::Exit),
                     label: "Salir",
-                    shortcut: "Esc",
+                    shortcut: "",
                     checked: false,
                     separator: false,
                 },
@@ -779,7 +779,7 @@ pub fn draw_dialog(
 
             let lines = [
                 (
-                    "Buscaminas v2.2.1 (Edición Rust)",
+                    "Buscaminas v2.2.2 (Edición Rust)",
                     16.0,
                     Color::new(0.0, 0.1, 0.5, 1.0),
                 ),
