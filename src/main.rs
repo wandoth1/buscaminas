@@ -23,7 +23,7 @@ use ui::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Buscaminas v2.3.0 (Rust)".to_string(),
+        window_title: "Buscaminas v2.4.0 (Rust)".to_string(),
         window_width: 312,
         window_height: 396,
         window_resizable: false,
