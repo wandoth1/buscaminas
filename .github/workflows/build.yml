@@ -29,24 +29,17 @@ jobs:
           components: rustfmt,clippy
 
       - name: Check project
-        run: cargo check --all-targets --all-features
-
-      - name: Upload resolved Cargo.lock
-        uses: actions/upload-artifact@v4
-        with:
-          name: Cargo-lock
-          path: Cargo.lock
-          if-no-files-found: error
+        run: cargo check --locked --all-targets --all-features
 
       - name: Report formatting differences
         continue-on-error: true
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --all-targets --all-features
+        run: cargo clippy --locked --all-targets --all-features
 
       - name: Tests
-        run: cargo test --all-targets --all-features
+        run: cargo test --locked --all-targets --all-features
 
   build-macos:
     name: Build macOS (Universal App & Binary)
@@ -62,10 +55,10 @@ jobs:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Build for Apple Silicon (aarch64)
-        run: cargo build --release --target aarch64-apple-darwin
+        run: cargo build --locked --release --target aarch64-apple-darwin
 
       - name: Build for Intel (x86_64)
-        run: cargo build --release --target x86_64-apple-darwin
+        run: cargo build --locked --release --target x86_64-apple-darwin
 
       - name: Create Universal Binary & macOS App Bundle
         run: |
@@ -150,7 +143,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build Windows Release
-        run: cargo build --release
+        run: cargo build --locked --release
 
       - name: Package Windows Binary
         shell: pwsh
@@ -178,9 +171,6 @@ jobs:
         with:
           path: release-assets
           merge-multiple: true
-
-      - name: Remove CI-only artifacts
-        run: rm -f release-assets/Cargo.lock
 
       - name: Publish to GitHub Release
         uses: softprops/action-gh-release@v2
