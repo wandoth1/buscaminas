@@ -1,6 +1,12 @@
 use std::f32::consts::PI;
+use std::sync::mpsc::{Receiver, Sender, channel};
 
-use macroquad::audio::{Sound, load_sound_from_bytes, play_sound_once};
+use macroquad::audio::{
+    PlaySoundParams, Sound, load_sound_from_bytes, play_sound, play_sound_once, stop_sound,
+};
+
+use crate::music::MusicTrack;
+use crate::synth::{SAMPLE_RATE, make_wav};
 
 pub struct SoundManager {
     pub enabled: bool,
@@ -14,7 +20,7 @@ pub struct SoundManager {
 
 impl SoundManager {
     pub async fn new() -> Self {
-        let sample_rate = 22050;
+        let sample_rate = SAMPLE_RATE;
 
         let click_dur = 0.035;
         let n = (sample_rate as f32 * click_dur) as usize;
@@ -158,32 +164,124 @@ impl SoundManager {
     }
 }
 
-fn make_wav(samples: &[f32], sample_rate: u32) -> Vec<u8> {
-    let num_samples = samples.len();
-    let subchunk2_size = (num_samples * 2) as u32;
-    let chunk_size = 36 + subchunk2_size;
-    let byte_rate = sample_rate * 2;
+/// Volumen de la música, muy por debajo de los efectos para no taparlos.
+const MUSIC_VOLUME: f32 = 0.32;
 
-    let mut buf = Vec::with_capacity((44 + subchunk2_size) as usize);
-    buf.extend_from_slice(b"RIFF");
-    buf.extend_from_slice(&chunk_size.to_le_bytes());
-    buf.extend_from_slice(b"WAVE");
-    buf.extend_from_slice(b"fmt ");
-    buf.extend_from_slice(&16u32.to_le_bytes());
-    buf.extend_from_slice(&1u16.to_le_bytes());
-    buf.extend_from_slice(&1u16.to_le_bytes());
-    buf.extend_from_slice(&sample_rate.to_le_bytes());
-    buf.extend_from_slice(&byte_rate.to_le_bytes());
-    buf.extend_from_slice(&2u16.to_le_bytes());
-    buf.extend_from_slice(&16u16.to_le_bytes());
-    buf.extend_from_slice(b"data");
-    buf.extend_from_slice(&subchunk2_size.to_le_bytes());
+/// Reproductor de los temas de fondo.
+///
+/// Generar un tema cuesta unos 450 ms, demasiado para el hilo del juego: la
+/// ventana se quedaría congelada media pantalla al activar la música. Cada tema
+/// se genera en un hilo aparte la primera vez que se pide y se recoge en
+/// [`MusicManager::poll`], así que el arranque no paga nada y no hay tirón.
+pub struct MusicManager {
+    tx: Sender<(MusicTrack, Vec<u8>)>,
+    rx: Receiver<(MusicTrack, Vec<u8>)>,
+    relax: Option<Sound>,
+    focus: Option<Sound>,
+    /// Temas cuya generación ya se ha lanzado, para no lanzarla dos veces.
+    requested: Vec<MusicTrack>,
+    /// Tema que el jugador quiere oír.
+    wanted: Option<MusicTrack>,
+    /// Tema que está sonando de verdad. Puede ir por detrás de `wanted`
+    /// mientras el hilo termina de generar.
+    active: Option<MusicTrack>,
+}
 
-    for &s in samples {
-        let clamped = s.clamp(-1.0, 1.0);
-        let val = (clamped * 32767.0) as i16;
-        buf.extend_from_slice(&val.to_le_bytes());
+impl MusicManager {
+    pub fn new() -> Self {
+        let (tx, rx) = channel();
+        Self {
+            tx,
+            rx,
+            relax: None,
+            focus: None,
+            requested: Vec::new(),
+            wanted: None,
+            active: None,
+        }
     }
 
-    buf
+    /// Tema seleccionado, sonando o a punto de sonar.
+    pub fn selected(&self) -> Option<MusicTrack> {
+        self.wanted
+    }
+
+    /// Activa un tema, o lo para si ya era el seleccionado.
+    pub fn toggle(&mut self, track: MusicTrack) {
+        let next = if self.wanted == Some(track) {
+            None
+        } else {
+            Some(track)
+        };
+        self.select(next);
+    }
+
+    /// Pide un tema concreto, o silencio con `None`.
+    pub fn select(&mut self, track: Option<MusicTrack>) {
+        self.wanted = track;
+        if let Some(track) = track {
+            self.request(track);
+        }
+        self.apply();
+    }
+
+    /// Recoge los temas que el hilo haya terminado y arranca el pendiente.
+    /// Hay que llamarlo una vez por frame.
+    pub async fn poll(&mut self) {
+        while let Ok((track, wav)) = self.rx.try_recv() {
+            // En nativo esto no cede frames: el await solo espera de verdad en
+            // wasm, donde la descodificación no es inmediata.
+            let sound = load_sound_from_bytes(&wav).await.ok();
+            match track {
+                MusicTrack::Relax => self.relax = sound,
+                MusicTrack::Focus => self.focus = sound,
+            }
+        }
+        self.apply();
+    }
+
+    fn sound_of(&self, track: MusicTrack) -> Option<&Sound> {
+        match track {
+            MusicTrack::Relax => self.relax.as_ref(),
+            MusicTrack::Focus => self.focus.as_ref(),
+        }
+    }
+
+    fn request(&mut self, track: MusicTrack) {
+        if self.sound_of(track).is_some() || self.requested.contains(&track) {
+            return;
+        }
+        self.requested.push(track);
+        let tx = self.tx.clone();
+        // Si el receptor ya no existe el envío falla sin más: el juego se está
+        // cerrando y la música ya no importa.
+        std::thread::spawn(move || {
+            let _ = tx.send((track, track.wav()));
+        });
+    }
+
+    fn apply(&mut self) {
+        if self.active == self.wanted {
+            return;
+        }
+        if let Some(active) = self.active
+            && let Some(sound) = self.sound_of(active)
+        {
+            stop_sound(sound);
+        }
+        self.active = None;
+
+        if let Some(wanted) = self.wanted
+            && let Some(sound) = self.sound_of(wanted)
+        {
+            play_sound(
+                sound,
+                PlaySoundParams {
+                    looped: true,
+                    volume: MUSIC_VOLUME,
+                },
+            );
+            self.active = Some(wanted);
+        }
+    }
 }
