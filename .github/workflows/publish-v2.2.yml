@@ -1,0 +1,66 @@
+name: Publish v2.2.0 once
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/publish-v2.2.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified Windows artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release-assets/windows
+          gh run download 34687674324 --repo "$GITHUB_REPOSITORY" --name Buscaminas-Windows --dir release-assets/windows
+
+      - name: Download verified macOS artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release-assets/macos
+          gh run download 34687674324 --repo "$GITHUB_REPOSITORY" --name Buscaminas-macOS-Universal --dir release-assets/macos
+
+      - name: Verify release files
+        run: |
+          test -f release-assets/windows/Buscaminas_v2.exe
+          test -f release-assets/macos/Buscaminas-macOS-Universal.zip
+          ls -lh release-assets/windows/Buscaminas_v2.exe release-assets/macos/Buscaminas-macOS-Universal.zip
+
+      - name: Publish v2.2.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v2.2.0 \
+            release-assets/windows/Buscaminas_v2.exe \
+            release-assets/macos/Buscaminas-macOS-Universal.zip \
+            --repo "$GITHUB_REPOSITORY" \
+            --target 1bb1181b805c14d9c0d29d1f98f0ceb06f389e6c \
+            --title "Buscaminas v2.2.0 (Windows & macOS Universal)" \
+            --notes-file - <<'EOF'
+          ## Buscaminas v2.2.0
+
+          Versión revisada y endurecida para Windows y macOS.
+
+          ### Cambios principales
+          - Corrige la fecha de los récords y elimina la fecha fija.
+          - Guarda los récords en ubicaciones de datos apropiadas del sistema.
+          - El juego sigue funcionando si el subsistema de audio no puede inicializarse.
+          - Corrige el doble procesamiento de clics en los menús.
+          - Añade pruebas automáticas del motor.
+          - Refuerza la CI y el empaquetado de Windows y macOS.
+          - macOS se compila como binario universal Apple Silicon + Intel y se verifica con codesign.
+
+          ### Descargas
+          - Windows: `Buscaminas_v2.exe`
+          - macOS: `Buscaminas-macOS-Universal.zip`
+
+          Nota: la aplicación de macOS usa firma ad-hoc para validar el bundle, pero no está notarizada con Apple Developer ID, por lo que Gatekeeper puede pedir confirmación en la primera apertura.
+          EOF
