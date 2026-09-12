@@ -11,6 +11,8 @@
 //!   Colchón ancho, pulso de negras filtrado y grave, sin melodía que reclame
 //!   atención.
 
+use serde::{Deserialize, Serialize};
+
 use crate::synth::{
     self, Note, Rng, SAMPLE_RATE, low_pass, make_wav, midi_to_freq, normalize, render_bell,
     render_pad, render_pluck, render_sub,
@@ -24,11 +26,16 @@ const TAIL_SECONDS: f32 = 8.0;
 /// los efectos de sonido del juego.
 const PEAK: f32 = 0.72;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+/// Los nombres de serde van en castellano porque acaban en el JSON de ajustes,
+/// que el jugador puede abrir; los identificadores del código se quedan como
+/// están.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MusicTrack {
     /// Ligera y relajada, para tener puesta de fondo sin pensar en ella.
+    #[serde(rename = "relax")]
     Relax,
     /// Chillout de concentración: plana, sin sobresaltos, para no distraer.
+    #[serde(rename = "concentracion")]
     Focus,
 }
 
