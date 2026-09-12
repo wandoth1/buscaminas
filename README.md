@@ -1,4 +1,4 @@
-# 🦀 Buscaminas v2.2.2 (Rust · Windows & macOS)
+# 🦀 Buscaminas v2.3.0 (Rust · Windows & macOS)
 
 Versión del clásico **Buscaminas** reescrita en **Rust** con Macroquad. El mismo código fuente se compila de forma nativa para **Windows** y **macOS**, incluyendo un binario universal para **Apple Silicon e Intel**.
 
@@ -10,7 +10,7 @@ Las versiones compiladas se publican exclusivamente en **GitHub Releases**; el r
 
 Descarga `Buscaminas_v2.exe` desde Releases y ejecútalo directamente. No requiere instalar Rust ni un runtime adicional.
 
-Los récords se guardan en `%LOCALAPPDATA%\Buscaminas\mejores_tiempos_v2.json`.
+Los récords se guardan en `%LOCALAPPDATA%\Buscaminas\mejores_tiempos_v2.json` y los ajustes en `ajustes_v2.json`, en esa misma carpeta.
 
 ### macOS
 
@@ -18,7 +18,7 @@ Descarga `Buscaminas-macOS-Universal.zip`, descomprímelo y abre `Buscaminas.app
 
 El artefacto generado por GitHub Actions contiene un binario universal `arm64 + x86_64`. Actualmente el workflow aplica una **firma ad-hoc** para comprobar la integridad del bundle, pero la aplicación **no está notarizada por Apple ni firmada con un certificado Developer ID**. Por ello Gatekeeper puede bloquear la primera apertura de una copia descargada de Internet. Para una distribución pública sin avisos de Gatekeeper se necesita un certificado Apple Developer ID y notarización de Apple.
 
-Los récords se guardan en `~/Library/Application Support/Buscaminas/mejores_tiempos_v2.json`.
+Los récords se guardan en `~/Library/Application Support/Buscaminas/mejores_tiempos_v2.json` y los ajustes en `ajustes_v2.json`, en esa misma carpeta.
 
 ## Características
 
@@ -31,8 +31,10 @@ Los récords se guardan en `~/Library/Application Support/Buscaminas/mejores_tie
 - Contadores LED de minas y tiempo.
 - Efectos de partículas y screen shake.
 - Audio procedural generado en memoria.
+- Dos temas de música de fondo, compuestos y sintetizados en código: **relax** (fa mayor, bucle de 64 s) y **concentración** (la menor, bucle de 80 s). Se eligen en *Opciones*, y el juego arranca con el primero.
 - Si el subsistema de audio no puede inicializarse, el juego continúa funcionando sin sonido.
 - Tabla de mejores tiempos persistente en JSON.
+- Ajustes persistentes: música, sonido, partículas y marcas (?).
 
 ## Compilar desde código
 
@@ -46,6 +48,12 @@ Para ejecutar durante el desarrollo:
 
 ```bash
 cargo run --locked --release
+```
+
+Para volcar los dos temas a WAV y escucharlos fuera del juego:
+
+```bash
+cargo run --locked --release --example exportar_musica -- carpeta_destino
 ```
 
 
@@ -62,4 +70,4 @@ Después combina ambas arquitecturas con `lipo`, valida el `Info.plist`, verific
 
 ## Código fuente
 
-El juego no necesita recursos externos en tiempo de ejecución para sus sonidos. Las imágenes de icono del repositorio se utilizan únicamente durante el empaquetado de las aplicaciones.
+El juego no necesita recursos externos en tiempo de ejecución para su audio: tanto los efectos como los dos temas de música se generan por síntesis en memoria, sin samples ni ficheros de sonido en el repositorio. Las imágenes de icono del repositorio se utilizan únicamente durante el empaquetado de las aplicaciones.
