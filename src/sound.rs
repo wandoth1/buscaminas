@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use macroquad::audio::{load_sound_from_bytes, play_sound_once, Sound};
+use macroquad::audio::{Sound, load_sound_from_bytes, play_sound_once};
 
 pub struct SoundManager {
     pub enabled: bool,
@@ -55,9 +55,12 @@ impl SoundManager {
         for i in 0..n {
             let t = i as f32 / sample_rate as f32;
             let d1 = (-70.0 * t).exp();
-            let d2 = if t >= 0.03 { (-70.0 * (t - 0.03)).exp() } else { 0.0 };
-            let val = (2.0 * PI * 650.0 * t).sin() * d1
-                + (2.0 * PI * 1050.0 * t).sin() * d2;
+            let d2 = if t >= 0.03 {
+                (-70.0 * (t - 0.03)).exp()
+            } else {
+                0.0
+            };
+            let val = (2.0 * PI * 650.0 * t).sin() * d1 + (2.0 * PI * 1050.0 * t).sin() * d2;
             chord_samples.push(val * 0.5);
         }
         let sound_chord_raw = make_wav(&chord_samples, sample_rate);
@@ -123,19 +126,31 @@ impl SoundManager {
     }
 
     fn play_sound(&self, sound: &Option<Sound>) {
-        if self.enabled {
-            if let Some(sound) = sound {
-                play_sound_once(sound);
-            }
+        if self.enabled
+            && let Some(sound) = sound
+        {
+            play_sound_once(sound);
         }
     }
 
-    pub fn play_click(&self) { self.play_sound(&self.sound_click); }
-    pub fn play_flag(&self) { self.play_sound(&self.sound_flag); }
-    pub fn play_unflag(&self) { self.play_sound(&self.sound_unflag); }
-    pub fn play_chord(&self) { self.play_sound(&self.sound_chord); }
-    pub fn play_lose(&self) { self.play_sound(&self.sound_lose); }
-    pub fn play_win(&self) { self.play_sound(&self.sound_win); }
+    pub fn play_click(&self) {
+        self.play_sound(&self.sound_click);
+    }
+    pub fn play_flag(&self) {
+        self.play_sound(&self.sound_flag);
+    }
+    pub fn play_unflag(&self) {
+        self.play_sound(&self.sound_unflag);
+    }
+    pub fn play_chord(&self) {
+        self.play_sound(&self.sound_chord);
+    }
+    pub fn play_lose(&self) {
+        self.play_sound(&self.sound_lose);
+    }
+    pub fn play_win(&self) {
+        self.play_sound(&self.sound_win);
+    }
 
     pub fn toggle(&mut self) -> bool {
         self.enabled = !self.enabled;

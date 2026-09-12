@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
 use crate::constants::{CellState, GameState};
+use std::collections::VecDeque;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Cell {
@@ -15,6 +15,12 @@ impl Cell {
             adjacent_mines: 0,
             state: CellState::Hidden,
         }
+    }
+}
+
+impl Default for Cell {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -42,6 +48,7 @@ pub struct Board {
     pub game_state: GameState,
     pub start_time: Option<f64>,
     pub end_time: Option<f64>,
+    pub paused_at: Option<f64>,
     pub flags_count: usize,
     pub revealed_count: usize,
     pub exploded_cell: Option<(usize, usize)>,
@@ -52,7 +59,11 @@ pub struct Board {
 impl Board {
     pub fn new(cols: usize, rows: usize, total_mines: usize) -> Self {
         let count = cols * rows;
-        let clamped_mines = total_mines.clamp(1, count.saturating_sub(1));
+        let clamped_mines = if count > 1 {
+            total_mines.clamp(1, count - 1)
+        } else {
+            0
+        };
         Self {
             cols,
             rows,
@@ -61,6 +72,7 @@ impl Board {
             game_state: GameState::Ready,
             start_time: None,
             end_time: None,
+            paused_at: None,
             flags_count: 0,
             revealed_count: 0,
             exploded_cell: None,
@@ -73,11 +85,16 @@ impl Board {
         self.cols = cols;
         self.rows = rows;
         let count = cols * rows;
-        self.total_mines = total_mines.clamp(1, count.saturating_sub(1));
+        self.total_mines = if count > 1 {
+            total_mines.clamp(1, count - 1)
+        } else {
+            0
+        };
         self.grid = vec![Cell::new(); count];
         self.game_state = GameState::Ready;
         self.start_time = None;
         self.end_time = None;
+        self.paused_at = None;
         self.flags_count = 0;
         self.revealed_count = 0;
         self.exploded_cell = None;
@@ -149,7 +166,8 @@ impl Board {
             for c in 0..self.cols {
                 let idx = self.idx(r, c);
                 if !self.grid[idx].is_mine {
-                    let count = self.get_neighbors(r, c)
+                    let count = self
+                        .get_neighbors(r, c)
                         .iter()
                         .filter(|&&(nr, nc)| self.grid[self.idx(nr, nc)].is_mine)
                         .count() as u8;
@@ -163,9 +181,15 @@ impl Board {
         if self.game_state == GameState::Won || self.game_state == GameState::Lost {
             return RevealResult::None;
         }
+        if r >= self.rows || c >= self.cols {
+            return RevealResult::None;
+        }
 
         let idx = self.idx(r, c);
-        if self.grid[idx].state != CellState::Hidden {
+        if !matches!(
+            self.grid[idx].state,
+            CellState::Hidden | CellState::Question
+        ) {
             return RevealResult::None;
         }
 
@@ -174,6 +198,7 @@ impl Board {
             self.first_click = false;
             self.game_state = GameState::Playing;
             self.start_time = Some(now);
+            self.paused_at = None;
         }
 
         if self.grid[idx].is_mine {
@@ -231,6 +256,9 @@ impl Board {
         if self.game_state == GameState::Won || self.game_state == GameState::Lost {
             return FlagAction::None;
         }
+        if r >= self.rows || c >= self.cols {
+            return FlagAction::None;
+        }
 
         let idx = self.idx(r, c);
         let cell = &mut self.grid[idx];
@@ -264,6 +292,9 @@ impl Board {
         if self.game_state != GameState::Playing {
             return RevealResult::None;
         }
+        if r >= self.rows || c >= self.cols {
+            return RevealResult::None;
+        }
 
         let idx = self.idx(r, c);
         let cell = self.grid[idx];
@@ -272,7 +303,8 @@ impl Board {
         }
 
         let neighbors = self.get_neighbors(r, c);
-        let flag_count = neighbors.iter()
+        let flag_count = neighbors
+            .iter()
             .filter(|&&(nr, nc)| self.grid[self.idx(nr, nc)].state == CellState::Flagged)
             .count() as u8;
 
@@ -321,6 +353,24 @@ impl Board {
         }
     }
 
+    pub fn pause(&mut self, now: f64) {
+        if self.game_state == GameState::Playing && self.paused_at.is_none() {
+            self.paused_at = Some(now);
+        }
+    }
+
+    pub fn resume(&mut self, now: f64) {
+        if self.game_state != GameState::Playing {
+            self.paused_at = None;
+            return;
+        }
+        if let Some(paused_at) = self.paused_at.take()
+            && let Some(start_time) = &mut self.start_time
+        {
+            *start_time += (now - paused_at).max(0.0);
+        }
+    }
+
     pub fn remaining_mines(&self) -> i32 {
         self.total_mines as i32 - self.flags_count as i32
     }
@@ -330,7 +380,8 @@ impl Board {
             GameState::Ready => 0,
             GameState::Playing => {
                 if let Some(st) = self.start_time {
-                    ((now - st).max(0.0) as u32).min(999)
+                    let effective_now = self.paused_at.unwrap_or(now);
+                    ((effective_now - st).max(0.0) as u32).min(999)
                 } else {
                     0
                 }

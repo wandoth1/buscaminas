@@ -2,22 +2,22 @@
 
 mod constants;
 mod engine;
-mod sound;
 mod highscores;
 mod render;
+mod sound;
 mod ui;
 
-use macroquad::prelude::*;
 use constants::*;
-use engine::{Board, RevealResult, FlagAction};
-use sound::SoundManager;
+use engine::{Board, FlagAction, RevealResult};
 use highscores::HighScoreManager;
+use macroquad::prelude::*;
 use render::*;
+use sound::SoundManager;
 use ui::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Buscaminas v2 (Rust)".to_string(),
+        window_title: "Buscaminas v2.2.1 (Rust)".to_string(),
         window_width: 312,
         window_height: 396,
         window_resizable: false,
@@ -46,7 +46,8 @@ async fn main() {
 
     // Ajuste de tamaño inicial
     let mut target_window_w = (board.cols as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-    let mut target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (board.rows as f32 * CELL_SIZE) + 3.0 * MARGIN;
+    let mut target_window_h =
+        MENU_HEIGHT + HEADER_HEIGHT + (board.rows as f32 * CELL_SIZE) + 3.0 * MARGIN;
     request_new_screen_size(target_window_w, target_window_h);
 
     loop {
@@ -83,8 +84,10 @@ async fn main() {
         let mouse_pos = Vec2::from(mouse_position());
 
         // Función auxiliar para celda bajo el cursor
-        let hovered_cell = if mouse_pos.x >= board_x && mouse_pos.x < board_x + board_w
-            && mouse_pos.y >= board_y && mouse_pos.y < board_y + board_h
+        let hovered_cell = if mouse_pos.x >= board_x
+            && mouse_pos.x < board_x + board_w
+            && mouse_pos.y >= board_y
+            && mouse_pos.y < board_y + board_h
         {
             let c = ((mouse_pos.x - board_x) / CELL_SIZE) as usize;
             let r = ((mouse_pos.y - board_y) / CELL_SIZE) as usize;
@@ -103,17 +106,33 @@ async fn main() {
         let dialog_active = !matches!(dialog, DialogState::None);
 
         if dialog_active {
+            board.pause(now);
+            mouse_left_down = false;
+            mouse_right_down = false;
+            mouse_middle_down = false;
+            smiley_pressed = false;
+
             match draw_dialog(&mut dialog, &mut highscores, screen_w, screen_h) {
                 DialogEvent::ApplyCustom(c, r, m) => {
-                    current_diff = Difficulty::Custom { cols: c, rows: r, mines: m };
+                    current_diff = Difficulty::Custom {
+                        cols: c,
+                        rows: r,
+                        mines: m,
+                    };
                     board.reset(c, r, m);
                     target_window_w = (c as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-                    target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
+                    target_window_h =
+                        MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
                     request_new_screen_size(target_window_w, target_window_h);
                 }
                 DialogEvent::SaveRecord(d_id, name, secs) => {
                     highscores.add_score(&d_id, name, secs);
-                    dialog = DialogState::HighScores { tab: "principiante" };
+                    let tab = match d_id.as_str() {
+                        "intermedio" => "intermedio",
+                        "experto" => "experto",
+                        _ => "principiante",
+                    };
+                    dialog = DialogState::HighScores { tab };
                 }
                 DialogEvent::ResetHighScores => {}
                 DialogEvent::Close | DialogEvent::None => {}
@@ -122,13 +141,17 @@ async fn main() {
             continue;
         }
 
+        board.resume(now);
+
         // Barra de Menús
+        let menu_was_open = menu_bar.active_menu.is_some();
         let menu_action = menu_bar.draw(
             screen_w,
             current_diff,
             board.allow_question,
             sound.enabled,
             particles_enabled,
+            true,
         );
 
         if let Some(act) = menu_action {
@@ -142,7 +165,8 @@ async fn main() {
                     let (c, r, m) = current_diff.config();
                     board.reset(c, r, m);
                     target_window_w = (c as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-                    target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
+                    target_window_h =
+                        MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
                     request_new_screen_size(target_window_w, target_window_h);
                 }
                 MenuAction::DiffIntermedio => {
@@ -150,7 +174,8 @@ async fn main() {
                     let (c, r, m) = current_diff.config();
                     board.reset(c, r, m);
                     target_window_w = (c as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-                    target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
+                    target_window_h =
+                        MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
                     request_new_screen_size(target_window_w, target_window_h);
                 }
                 MenuAction::DiffExperto => {
@@ -158,14 +183,24 @@ async fn main() {
                     let (c, r, m) = current_diff.config();
                     board.reset(c, r, m);
                     target_window_w = (c as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-                    target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
+                    target_window_h =
+                        MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
                     request_new_screen_size(target_window_w, target_window_h);
                 }
                 MenuAction::DiffCustom => {
-                    dialog = DialogState::Custom { cols: board.cols, rows: board.rows, mines: board.total_mines };
+                    dialog = DialogState::Custom {
+                        cols: board.cols,
+                        rows: board.rows,
+                        mines: board.total_mines,
+                    };
                 }
                 MenuAction::OpenRecords => {
-                    dialog = DialogState::HighScores { tab: "principiante" };
+                    let tab = match current_diff {
+                        Difficulty::Intermedio => "intermedio",
+                        Difficulty::Experto => "experto",
+                        _ => "principiante",
+                    };
+                    dialog = DialogState::HighScores { tab };
                 }
                 MenuAction::ToggleMarks => {
                     board.allow_question = !board.allow_question;
@@ -190,11 +225,12 @@ async fn main() {
 
         // Si hay un menú desplegado, omitir interacción con el tablero
         let menu_open = menu_bar.active_menu.is_some();
+        let board_input_blocked = menu_was_open || menu_open;
 
         // -------------------------------------------------------------
         // Atajos de teclado rápidos
         // -------------------------------------------------------------
-        if !menu_open {
+        if !board_input_blocked {
             if is_key_pressed(KeyCode::F2) {
                 let (c, r, m) = current_diff.config();
                 board.reset(c, r, m);
@@ -203,21 +239,24 @@ async fn main() {
                 let (c, r, m) = current_diff.config();
                 board.reset(c, r, m);
                 target_window_w = (c as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-                target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
+                target_window_h =
+                    MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
                 request_new_screen_size(target_window_w, target_window_h);
             } else if is_key_pressed(KeyCode::Key2) {
                 current_diff = Difficulty::Intermedio;
                 let (c, r, m) = current_diff.config();
                 board.reset(c, r, m);
                 target_window_w = (c as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-                target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
+                target_window_h =
+                    MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
                 request_new_screen_size(target_window_w, target_window_h);
             } else if is_key_pressed(KeyCode::Key3) {
                 current_diff = Difficulty::Experto;
                 let (c, r, m) = current_diff.config();
                 board.reset(c, r, m);
                 target_window_w = (c as f32 * CELL_SIZE + 2.0 * MARGIN).max(260.0);
-                target_window_h = MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
+                target_window_h =
+                    MENU_HEIGHT + HEADER_HEIGHT + (r as f32 * CELL_SIZE) + 3.0 * MARGIN;
                 request_new_screen_size(target_window_w, target_window_h);
             } else if is_key_pressed(KeyCode::M) {
                 sound.toggle();
@@ -229,7 +268,7 @@ async fn main() {
         // -------------------------------------------------------------
         // Interacción del Ratón
         // -------------------------------------------------------------
-        if !menu_open {
+        if !board_input_blocked {
             if is_mouse_button_pressed(MouseButton::Left) {
                 mouse_left_down = true;
                 if smiley_rect.contains(mouse_pos) {
@@ -238,13 +277,13 @@ async fn main() {
             }
             if is_mouse_button_pressed(MouseButton::Right) {
                 mouse_right_down = true;
-                if let Some((r, c)) = hovered_cell {
-                    if !mouse_left_down {
-                        match board.toggle_flag(r, c) {
-                            FlagAction::Flag => sound.play_flag(),
-                            FlagAction::Unflag | FlagAction::Question => sound.play_unflag(),
-                            FlagAction::None => {}
-                        }
+                if let Some((r, c)) = hovered_cell
+                    && !mouse_left_down
+                {
+                    match board.toggle_flag(r, c) {
+                        FlagAction::Flag => sound.play_flag(),
+                        FlagAction::Unflag | FlagAction::Question => sound.play_unflag(),
+                        FlagAction::None => {}
                     }
                 }
             }
@@ -280,7 +319,12 @@ async fn main() {
                                 if particles_enabled {
                                     particles.spawn_confetti(screen_w / 2.0, board_y + 20.0, 70);
                                 }
-                                check_and_prompt_record(&board, current_diff, &highscores, &mut dialog);
+                                check_and_prompt_record(
+                                    &board,
+                                    current_diff,
+                                    &highscores,
+                                    &mut dialog,
+                                );
                             }
                             RevealResult::Ok(_) => sound.play_chord(),
                             RevealResult::None => {}
@@ -288,7 +332,7 @@ async fn main() {
                     }
                 } else if let Some((r, c)) = hovered_cell {
                     let cell = board.grid[board.idx(r, c)];
-                    if cell.state == CellState::Hidden {
+                    if matches!(cell.state, CellState::Hidden | CellState::Question) {
                         match board.reveal(r, c, now) {
                             RevealResult::Mine(mr, mc) => {
                                 sound.play_lose();
@@ -304,7 +348,12 @@ async fn main() {
                                 if particles_enabled {
                                     particles.spawn_confetti(screen_w / 2.0, board_y + 20.0, 70);
                                 }
-                                check_and_prompt_record(&board, current_diff, &highscores, &mut dialog);
+                                check_and_prompt_record(
+                                    &board,
+                                    current_diff,
+                                    &highscores,
+                                    &mut dialog,
+                                );
                             }
                             RevealResult::Ok(_) => sound.play_click(),
                             RevealResult::None => {}
@@ -325,7 +374,12 @@ async fn main() {
                                 if particles_enabled {
                                     particles.spawn_confetti(screen_w / 2.0, board_y + 20.0, 70);
                                 }
-                                check_and_prompt_record(&board, current_diff, &highscores, &mut dialog);
+                                check_and_prompt_record(
+                                    &board,
+                                    current_diff,
+                                    &highscores,
+                                    &mut dialog,
+                                );
                             }
                             RevealResult::Ok(_) => sound.play_chord(),
                             RevealResult::None => {}
@@ -399,14 +453,25 @@ async fn main() {
         };
 
         // Marco exterior
-        draw_raised_rect(0.0, MENU_HEIGHT, screen_w, screen_h - MENU_HEIGHT, 3.0, None);
+        draw_raised_rect(
+            0.0,
+            MENU_HEIGHT,
+            screen_w,
+            screen_h - MENU_HEIGHT,
+            3.0,
+            None,
+        );
 
         // Encabezado
         draw_sunken_rect(header_x, header_y, header_w, header_h, 2.0, Some(BG_COLOR));
 
         // Contador LED de minas (Izquierda)
         let rem_mines = board.remaining_mines();
-        draw_led_counter(rem_mines, header_x + 8.0, header_y + (header_h - 34.0) / 2.0);
+        draw_led_counter(
+            rem_mines,
+            header_x + 8.0,
+            header_y + (header_h - 34.0) / 2.0,
+        );
 
         // Smiley (Centro)
         let smiley_state = match board.game_state {
@@ -420,11 +485,21 @@ async fn main() {
                 }
             }
         };
-        draw_smiley(smiley_rect.x, smiley_rect.y, SMILEY_SIZE, smiley_state, smiley_pressed);
+        draw_smiley(
+            smiley_rect.x,
+            smiley_rect.y,
+            SMILEY_SIZE,
+            smiley_state,
+            smiley_pressed,
+        );
 
         // Contador LED de tiempo (Derecha)
         let elapsed = board.elapsed_seconds(now);
-        draw_led_counter(elapsed as i32, header_x + header_w - 64.0 - 8.0, header_y + (header_h - 34.0) / 2.0);
+        draw_led_counter(
+            elapsed as i32,
+            header_x + header_w - 64.0 - 8.0,
+            header_y + (header_h - 34.0) / 2.0,
+        );
 
         // Tablero con borde hundido
         draw_sunken_rect(
@@ -447,19 +522,16 @@ async fn main() {
                 let cy_pos = board_y + (r as f32) * CELL_SIZE + shake_y;
 
                 let is_hovered = hovered_cell == Some((r, c));
-                let is_pressed = (is_hovered && mouse_left_down && !mouse_right_down && cell.state == CellState::Hidden)
-                    || (chord_neighbors.contains(&(r, c)) && (cell.state == CellState::Hidden || cell.state == CellState::Question));
+                let is_pressed = (is_hovered
+                    && mouse_left_down
+                    && !mouse_right_down
+                    && matches!(cell.state, CellState::Hidden | CellState::Question))
+                    || (chord_neighbors.contains(&(r, c))
+                        && (cell.state == CellState::Hidden || cell.state == CellState::Question));
 
                 let is_expl = game_lost && exploded_cell == Some((r, c));
 
-                draw_cell(
-                    cx_pos,
-                    cy_pos,
-                    cell,
-                    is_expl,
-                    is_pressed,
-                    game_lost,
-                );
+                draw_cell(cx_pos, cy_pos, cell, is_expl, is_pressed, game_lost);
             }
         }
 
@@ -475,6 +547,7 @@ async fn main() {
             board.allow_question,
             sound.enabled,
             particles_enabled,
+            false,
         );
 
         next_frame().await;

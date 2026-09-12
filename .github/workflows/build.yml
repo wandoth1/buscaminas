@@ -31,12 +31,11 @@ jobs:
       - name: Check project
         run: cargo check --locked --all-targets --all-features
 
-      - name: Report formatting differences
-        continue-on-error: true
+      - name: Check formatting
         run: cargo fmt --all -- --check
 
       - name: Clippy
-        run: cargo clippy --locked --all-targets --all-features
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
       - name: Tests
         run: cargo test --locked --all-targets --all-features
@@ -107,9 +106,9 @@ jobs:
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>CFBundleShortVersionString</key>
-              <string>2.2.0</string>
+              <string>2.2.1</string>
               <key>CFBundleVersion</key>
-              <string>2.2.0</string>
+              <string>2.2.1</string>
               <key>LSMinimumSystemVersion</key>
               <string>10.13</string>
               <key>NSHighResolutionCapable</key>
