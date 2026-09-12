@@ -21,11 +21,12 @@ pub enum MenuAction {
 
 pub struct MenuBar {
     pub active_menu: Option<usize>,
+    input_consumed: bool,
 }
 
 impl MenuBar {
     pub fn new() -> Self {
-        Self { active_menu: None }
+        Self { active_menu: None, input_consumed: false }
     }
 
     pub fn draw(
@@ -38,9 +39,15 @@ impl MenuBar {
     ) -> Option<MenuAction> {
         let mut action = None;
         let mouse_pos = Vec2::from(mouse_position());
-        let mouse_pressed = is_mouse_button_pressed(MouseButton::Left);
+        let raw_mouse_pressed = is_mouse_button_pressed(MouseButton::Left);
+        if !raw_mouse_pressed {
+            self.input_consumed = false;
+        }
+        let mouse_pressed = raw_mouse_pressed && !self.input_consumed;
+        if mouse_pressed {
+            self.input_consumed = true;
+        }
 
-        // Fondo barra menú
         draw_rectangle(0.0, 0.0, width, MENU_HEIGHT, COLOR_GRAY);
         draw_line(0.0, MENU_HEIGHT - 1.0, width, MENU_HEIGHT - 1.0, 1.0, COLOR_DARK_GRAY);
 
@@ -75,12 +82,6 @@ impl MenuBar {
             x_offset += item_w + 4.0;
         }
 
-        // Si se hace clic fuera de cualquier menú abierto, cerrarlo
-        if mouse_pressed && !clicked_any_title && self.active_menu.is_some() {
-            // Se comprobará si el clic fue dentro del desplegable
-        }
-
-        // Dibujar desplegable si hay uno activo
         if let Some(menu_idx) = self.active_menu {
             let drop_action = self.draw_dropdown(
                 menu_idx,
@@ -184,7 +185,6 @@ impl MenuBar {
 
             let text_col = if is_hover { COLOR_WHITE } else { COLOR_BLACK };
 
-            // Marca de verificación (Check)
             if item.checked {
                 let cx = drop_x + 12.0;
                 let cy = curr_y + 12.0;
@@ -206,10 +206,6 @@ impl MenuBar {
         selected_action
     }
 }
-
-// =========================================================================
-// Diálogos Modales Interactivos
-// =========================================================================
 
 pub enum DialogState {
     None,
@@ -238,7 +234,6 @@ pub fn draw_dialog(
         return DialogEvent::None;
     }
 
-    // Fondo oscurecido
     draw_rectangle(0.0, 0.0, screen_w, screen_h, Color::new(0.0, 0.0, 0.0, 0.45));
 
     let mouse_pos = Vec2::from(mouse_position());
@@ -249,11 +244,9 @@ pub fn draw_dialog(
         let dy = ((screen_h - dh) / 2.0).floor();
         draw_raised_rect(dx, dy, dw, dh, 3.0, Some(COLOR_GRAY));
 
-        // Barra de título azul Windows
         draw_rectangle(dx + 3.0, dy + 3.0, dw - 6.0, 22.0, Color::new(10.0 / 255.0, 36.0 / 255.0, 106.0 / 255.0, 1.0));
         draw_text(title, dx + 8.0, dy + 18.0, 14.0, COLOR_WHITE);
 
-        // Botón [X]
         let close_rect = Rect::new(dx + dw - 21.0, dy + 5.0, 16.0, 16.0);
         draw_raised_rect(close_rect.x, close_rect.y, close_rect.w, close_rect.h, 1.0, Some(COLOR_GRAY));
         draw_line(close_rect.x + 4.0, close_rect.y + 4.0, close_rect.x + 11.0, close_rect.y + 11.0, 2.0, COLOR_BLACK);
@@ -282,8 +275,6 @@ pub fn draw_dialog(
             }
 
             let mut y = dy + 45.0;
-
-            // Fila Columnas
             draw_text("Columnas (9 - 40):", dx + 16.0, y + 16.0, 14.0, COLOR_BLACK);
             draw_sunken_rect(dx + 160.0, y, 48.0, 22.0, 2.0, Some(COLOR_WHITE));
             draw_text(&cols.to_string(), dx + 175.0, y + 16.0, 14.0, COLOR_BLACK);
@@ -291,7 +282,6 @@ pub fn draw_dialog(
             if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) { *cols = (*cols + 1).min(40); }
 
             y += 36.0;
-            // Fila Filas
             draw_text("Filas (9 - 24):", dx + 16.0, y + 16.0, 14.0, COLOR_BLACK);
             draw_sunken_rect(dx + 160.0, y, 48.0, 22.0, 2.0, Some(COLOR_WHITE));
             draw_text(&rows.to_string(), dx + 175.0, y + 16.0, 14.0, COLOR_BLACK);
@@ -299,7 +289,6 @@ pub fn draw_dialog(
             if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) { *rows = (*rows + 1).min(24); }
 
             y += 36.0;
-            // Fila Minas
             let max_m = (*cols * *rows).saturating_sub(1);
             *mines = (*mines).clamp(10, max_m);
             draw_text("Minas:", dx + 16.0, y + 16.0, 14.0, COLOR_BLACK);
@@ -308,7 +297,6 @@ pub fn draw_dialog(
             if draw_btn("-", Rect::new(dx + 215.0, y, 22.0, 22.0), false) { *mines = (*mines).saturating_sub(5).max(10); }
             if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) { *mines = (*mines + 5).min(max_m); }
 
-            // Botones Aceptar / Cancelar
             let btn_ok = Rect::new(dx + 45.0, dy + 175.0, 95.0, 26.0);
             let btn_cancel = Rect::new(dx + 160.0, dy + 175.0, 95.0, 26.0);
             if draw_btn("Aceptar", btn_ok, true) || is_key_pressed(KeyCode::Enter) {
@@ -349,14 +337,12 @@ pub fn draw_dialog(
                 tx += 110.0;
             }
 
-            // Panel blanco de registros
             let panel_x = dx + 12.0;
             let panel_y = dy + 57.0;
             let panel_w = 336.0;
             let panel_h = 160.0;
             draw_sunken_rect(panel_x, panel_y, panel_w, panel_h, 2.0, Some(COLOR_WHITE));
 
-            // Encabezado
             draw_rectangle(panel_x + 2.0, panel_y + 2.0, panel_w - 4.0, 22.0, Color::new(0.9, 0.9, 0.9, 1.0));
             draw_text("#", panel_x + 10.0, panel_y + 16.0, 13.0, COLOR_BLACK);
             draw_text("Nombre", panel_x + 35.0, panel_y + 16.0, 13.0, COLOR_BLACK);
@@ -374,7 +360,6 @@ pub fn draw_dialog(
                 row_y += 24.0;
             }
 
-            // Botones
             if draw_btn("Restablecer", Rect::new(dx + 20.0, dy + 235.0, 110.0, 26.0), false) {
                 highscores.reset_defaults();
                 return DialogEvent::ResetHighScores;
@@ -395,21 +380,18 @@ pub fn draw_dialog(
             draw_text(&format!("Tiempo récord: {} segundos", seconds), dx + 20.0, dy + 68.0, 15.0, Color::new(0.0, 0.5, 0.0, 1.0));
             draw_text("Introduce tu nombre:", dx + 20.0, dy + 95.0, 14.0, COLOR_BLACK);
 
-            // Entrada de texto
             let box_rect = Rect::new(dx + 20.0, dy + 108.0, 280.0, 28.0);
             draw_sunken_rect(box_rect.x, box_rect.y, box_rect.w, box_rect.h, 2.0, Some(COLOR_WHITE));
             draw_text(name.as_str(), box_rect.x + 8.0, box_rect.y + 19.0, 15.0, COLOR_BLACK);
 
-            // Cursor parpadeante
             if ((get_time() * 2.0) as usize) % 2 == 0 {
                 let dim = measure_text(name.as_str(), None, 15, 1.0);
                 let cx = box_rect.x + 8.0 + dim.width + 2.0;
                 draw_line(cx, box_rect.y + 5.0, cx, box_rect.y + 23.0, 2.0, COLOR_BLACK);
             }
 
-            // Manejo de teclado para escribir nombre
             while let Some(c) = get_char_pressed() {
-                if !c.is_control() && name.chars().count() < 15 {
+                if !c.is_control() && name.chars().count() < 16 {
                     name.push(c);
                 }
             }
@@ -464,10 +446,10 @@ pub fn draw_dialog(
             }
 
             let lines = [
-                ("Buscaminas v2 (Edición Rust)", 16.0, Color::new(0.0, 0.1, 0.5, 1.0)),
+                ("Buscaminas v2.2 (Edición Rust)", 16.0, Color::new(0.0, 0.1, 0.5, 1.0)),
                 ("Desarrollado en Rust con Macroquad", 13.0, COLOR_BLACK),
                 ("Aceleración nativa por hardware a 60+ FPS,", 13.0, COLOR_VERY_DARK),
-                ("audio procedural con Windows PlaySoundW,", 13.0, COLOR_VERY_DARK),
+                ("audio procedural multiplataforma,", 13.0, COLOR_VERY_DARK),
                 ("sistema de partículas y chording auténtico.", 13.0, COLOR_VERY_DARK),
                 ("¡Rendimiento ultrarrápido y seguro en memoria!", 13.0, Color::new(0.0, 0.45, 0.0, 1.0)),
             ];
