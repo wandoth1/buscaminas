@@ -3,21 +3,27 @@
 mod constants;
 mod engine;
 mod highscores;
+mod music;
 mod render;
+mod settings;
 mod sound;
+mod synth;
 mod ui;
+mod userdata;
 
 use constants::*;
 use engine::{Board, FlagAction, RevealResult};
 use highscores::HighScoreManager;
 use macroquad::prelude::*;
+use music::MusicTrack;
 use render::*;
-use sound::SoundManager;
+use settings::Settings;
+use sound::{MusicManager, SoundManager};
 use ui::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Buscaminas v2.2.2 (Rust)".to_string(),
+        window_title: "Buscaminas v2.3.0 (Rust)".to_string(),
         window_width: 312,
         window_height: 396,
         window_resizable: false,
@@ -30,13 +36,22 @@ async fn main() {
     let mut current_diff = Difficulty::Principiante;
     let (init_cols, init_rows, init_mines) = current_diff.config();
 
+    let stored = Settings::load();
+
     let mut board = Board::new(init_cols, init_rows, init_mines);
+    board.allow_question = stored.question_marks;
+
     let mut sound = SoundManager::new().await;
+    // Un "sí" guardado no puede encender lo que no se pudo cargar: si el audio
+    // falló, `enabled` ya venía en false y se queda ahí.
+    sound.enabled &= stored.sound;
+
+    let mut music = MusicManager::new(stored.music);
     let mut highscores = HighScoreManager::new();
     let mut menu_bar = MenuBar::new();
     let mut dialog = DialogState::None;
     let mut particles = ParticleSystem::new();
-    let mut particles_enabled = true;
+    let mut particles_enabled = stored.particles;
 
     let mut mouse_left_down = false;
     let mut mouse_right_down = false;
@@ -51,6 +66,10 @@ async fn main() {
     request_new_screen_size(target_window_w, target_window_h);
 
     loop {
+        // Recoge los temas que el hilo de generación haya terminado y arranca
+        // el que estuviera pendiente.
+        music.poll().await;
+
         let dt = get_frame_time();
         let now = get_time();
         let screen_w = screen_width();
@@ -144,15 +163,20 @@ async fn main() {
         board.resume(now);
 
         // Barra de Menús
-        let menu_was_open = menu_bar.active_menu.is_some();
-        let menu_action = menu_bar.draw(
-            screen_w,
+        // Se marca en cada cambio de ajuste y se guarda una sola vez por frame,
+        // así el menú y los atajos de teclado comparten el mismo camino.
+        let mut settings_dirty = false;
+
+        let menu_state = MenuState {
             current_diff,
-            board.allow_question,
-            sound.enabled,
+            allow_question: board.allow_question,
+            sound_enabled: sound.enabled,
             particles_enabled,
-            true,
-        );
+            music: music.selected(),
+        };
+
+        let menu_was_open = menu_bar.active_menu.is_some();
+        let menu_action = menu_bar.draw(screen_w, menu_state, true);
 
         if let Some(act) = menu_action {
             match act {
@@ -204,12 +228,28 @@ async fn main() {
                 }
                 MenuAction::ToggleMarks => {
                     board.allow_question = !board.allow_question;
+                    settings_dirty = true;
                 }
                 MenuAction::ToggleSound => {
                     sound.toggle();
+                    settings_dirty = true;
                 }
                 MenuAction::ToggleParticles => {
                     particles_enabled = !particles_enabled;
+                    settings_dirty = true;
+                }
+                // Las tres entradas de música son un grupo excluyente.
+                MenuAction::MusicRelax => {
+                    music.select(Some(MusicTrack::Relax));
+                    settings_dirty = true;
+                }
+                MenuAction::MusicFocus => {
+                    music.select(Some(MusicTrack::Focus));
+                    settings_dirty = true;
+                }
+                MenuAction::MusicOff => {
+                    music.select(None);
+                    settings_dirty = true;
                 }
                 MenuAction::OpenHelp => {
                     dialog = DialogState::Help;
@@ -260,9 +300,22 @@ async fn main() {
                 request_new_screen_size(target_window_w, target_window_h);
             } else if is_key_pressed(KeyCode::M) {
                 sound.toggle();
+                settings_dirty = true;
             } else if is_key_pressed(KeyCode::P) {
                 particles_enabled = !particles_enabled;
+                settings_dirty = true;
             }
+        }
+
+        // Guardar aquí, después del menú y de los atajos, cubre los dos.
+        if settings_dirty {
+            Settings {
+                music: music.selected(),
+                sound: sound.enabled,
+                particles: particles_enabled,
+                question_marks: board.allow_question,
+            }
+            .save();
         }
 
         // -------------------------------------------------------------
@@ -553,14 +606,7 @@ async fn main() {
         }
 
         // Barra de Menús dibujada al final (en capa superior)
-        menu_bar.draw(
-            screen_w,
-            current_diff,
-            board.allow_question,
-            sound.enabled,
-            particles_enabled,
-            false,
-        );
+        menu_bar.draw(screen_w, menu_state, false);
 
         next_frame().await;
     }

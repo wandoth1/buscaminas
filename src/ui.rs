@@ -1,5 +1,6 @@
 use crate::constants::*;
 use crate::highscores::HighScoreManager;
+use crate::music::MusicTrack;
 use crate::render::{draw_raised_rect, draw_sunken_rect};
 use macroquad::prelude::*;
 
@@ -14,9 +15,25 @@ pub enum MenuAction {
     ToggleMarks,
     ToggleSound,
     ToggleParticles,
+    MusicRelax,
+    MusicFocus,
+    MusicOff,
     OpenHelp,
     OpenAbout,
     Exit,
+}
+
+/// Lo que el menú necesita saber para dibujarse: dificultad activa y el estado
+/// de cada interruptor. Agruparlo evita arrastrar media docena de booleanos por
+/// las firmas de `draw` y `draw_dropdown`.
+#[derive(Clone, Copy, Debug)]
+pub struct MenuState {
+    pub current_diff: Difficulty,
+    pub allow_question: bool,
+    pub sound_enabled: bool,
+    pub particles_enabled: bool,
+    /// Tema de fondo seleccionado, o `None` si no suena ninguno.
+    pub music: Option<MusicTrack>,
 }
 
 pub struct MenuBar {
@@ -32,15 +49,7 @@ impl MenuBar {
         }
     }
 
-    pub fn draw(
-        &mut self,
-        width: f32,
-        current_diff: Difficulty,
-        allow_question: bool,
-        sound_enabled: bool,
-        particles_enabled: bool,
-        interactive: bool,
-    ) -> Option<MenuAction> {
+    pub fn draw(&mut self, width: f32, state: MenuState, interactive: bool) -> Option<MenuAction> {
         let mut action = None;
         let mouse_pos = Vec2::from(mouse_position());
         let raw_mouse_pressed = interactive && is_mouse_button_pressed(MouseButton::Left);
@@ -94,16 +103,7 @@ impl MenuBar {
         }
 
         if let Some(menu_idx) = self.active_menu {
-            let drop_action = self.draw_dropdown(
-                menu_idx,
-                width,
-                current_diff,
-                allow_question,
-                sound_enabled,
-                particles_enabled,
-                mouse_pos,
-                mouse_pressed,
-            );
+            let drop_action = self.draw_dropdown(menu_idx, width, state, mouse_pos, mouse_pressed);
             if drop_action.is_some() {
                 action = drop_action;
                 self.active_menu = None;
@@ -115,15 +115,11 @@ impl MenuBar {
         action
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn draw_dropdown(
         &self,
         menu_idx: usize,
         screen_w: f32,
-        current_diff: Difficulty,
-        allow_question: bool,
-        sound_enabled: bool,
-        particles_enabled: bool,
+        state: MenuState,
         mouse_pos: Vec2,
         mouse_pressed: bool,
     ) -> Option<MenuAction> {
@@ -157,28 +153,28 @@ impl MenuBar {
                     action: Some(MenuAction::DiffPrincipiante),
                     label: "Principiante (9x9)",
                     shortcut: "1",
-                    checked: matches!(current_diff, Difficulty::Principiante),
+                    checked: matches!(state.current_diff, Difficulty::Principiante),
                     separator: false,
                 },
                 Item {
                     action: Some(MenuAction::DiffIntermedio),
                     label: "Intermedio (16x16)",
                     shortcut: "2",
-                    checked: matches!(current_diff, Difficulty::Intermedio),
+                    checked: matches!(state.current_diff, Difficulty::Intermedio),
                     separator: false,
                 },
                 Item {
                     action: Some(MenuAction::DiffExperto),
                     label: "Experto (30x16)",
                     shortcut: "3",
-                    checked: matches!(current_diff, Difficulty::Experto),
+                    checked: matches!(state.current_diff, Difficulty::Experto),
                     separator: false,
                 },
                 Item {
                     action: Some(MenuAction::DiffCustom),
                     label: "Personalizado...",
                     shortcut: "",
-                    checked: matches!(current_diff, Difficulty::Custom { .. }),
+                    checked: matches!(state.current_diff, Difficulty::Custom { .. }),
                     separator: false,
                 },
                 Item {
@@ -215,21 +211,49 @@ impl MenuBar {
                     action: Some(MenuAction::ToggleMarks),
                     label: "Marcas (?) activadas",
                     shortcut: "",
-                    checked: allow_question,
+                    checked: state.allow_question,
                     separator: false,
                 },
                 Item {
                     action: Some(MenuAction::ToggleSound),
                     label: "Sonido activado",
                     shortcut: "M",
-                    checked: sound_enabled,
+                    checked: state.sound_enabled,
                     separator: false,
                 },
                 Item {
                     action: Some(MenuAction::ToggleParticles),
                     label: "Efectos y partículas",
                     shortcut: "P",
-                    checked: particles_enabled,
+                    checked: state.particles_enabled,
+                    separator: false,
+                },
+                Item {
+                    action: None,
+                    label: "",
+                    shortcut: "",
+                    checked: false,
+                    separator: true,
+                },
+                Item {
+                    action: Some(MenuAction::MusicRelax),
+                    label: "Música: relax",
+                    shortcut: "",
+                    checked: state.music == Some(MusicTrack::Relax),
+                    separator: false,
+                },
+                Item {
+                    action: Some(MenuAction::MusicFocus),
+                    label: "Música: concentración",
+                    shortcut: "",
+                    checked: state.music == Some(MusicTrack::Focus),
+                    separator: false,
+                },
+                Item {
+                    action: Some(MenuAction::MusicOff),
+                    label: "Música: desactivada",
+                    shortcut: "",
+                    checked: state.music.is_none(),
                     separator: false,
                 },
             ],
@@ -779,7 +803,7 @@ pub fn draw_dialog(
 
             let lines = [
                 (
-                    "Buscaminas v2.2.2 (Edición Rust)",
+                    "Buscaminas v2.3.0 (Edición Rust)",
                     16.0,
                     Color::new(0.0, 0.1, 0.5, 1.0),
                 ),

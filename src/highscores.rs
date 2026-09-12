@@ -4,6 +4,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
+use crate::userdata;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ScoreEntry {
     pub name: String,
@@ -83,42 +85,7 @@ pub struct HighScoreManager {
 
 impl HighScoreManager {
     pub fn new() -> Self {
-        let exe_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .unwrap_or_else(|| PathBuf::from("."));
-
-        #[cfg(target_os = "macos")]
-        let file_path = user_data_file(
-            std::env::var_os("HOME").map(|home| {
-                PathBuf::from(home)
-                    .join("Library")
-                    .join("Application Support")
-                    .join("Buscaminas")
-            }),
-            &exe_dir,
-        );
-
-        #[cfg(target_os = "windows")]
-        let file_path = user_data_file(
-            std::env::var_os("LOCALAPPDATA")
-                .map(PathBuf::from)
-                .map(|path| path.join("Buscaminas")),
-            &exe_dir,
-        );
-
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-        let file_path = user_data_file(
-            std::env::var_os("XDG_DATA_HOME")
-                .map(PathBuf::from)
-                .or_else(|| {
-                    std::env::var_os("HOME")
-                        .map(PathBuf::from)
-                        .map(|path| path.join(".local").join("share"))
-                })
-                .map(|path| path.join("buscaminas")),
-            &exe_dir,
-        );
+        let file_path = userdata::data_file("mejores_tiempos_v2.json");
 
         let mut mgr = Self {
             data: HighScoreData::default(),
@@ -199,15 +166,6 @@ impl HighScoreManager {
         self.data = HighScoreData::default();
         self.save();
     }
-}
-
-fn user_data_file(preferred_dir: Option<PathBuf>, exe_dir: &std::path::Path) -> PathBuf {
-    if let Some(dir) = preferred_dir
-        && fs::create_dir_all(&dir).is_ok()
-    {
-        return dir.join("mejores_tiempos_v2.json");
-    }
-    exe_dir.join("mejores_tiempos_v2.json")
 }
 
 fn current_utc_date() -> String {
