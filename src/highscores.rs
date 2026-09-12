@@ -1,6 +1,8 @@
-use std::path::PathBuf;
 use std::fs;
-use serde::{Serialize, Deserialize};
+use std::path::PathBuf;
+
+use chrono::Local;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ScoreEntry {
@@ -52,9 +54,15 @@ impl HighScoreManager {
 
         #[cfg(target_os = "macos")]
         let file_path = if let Ok(home) = std::env::var("HOME") {
-            let app_support = PathBuf::from(home).join("Library").join("Application Support").join("Buscaminas");
-            let _ = std::fs::create_dir_all(&app_support);
-            app_support.join("mejores_tiempos_v2.json")
+            let app_support = PathBuf::from(home)
+                .join("Library")
+                .join("Application Support")
+                .join("Buscaminas");
+            if fs::create_dir_all(&app_support).is_ok() {
+                app_support.join("mejores_tiempos_v2.json")
+            } else {
+                exe_dir.join("mejores_tiempos_v2.json")
+            }
         } else {
             exe_dir.join("mejores_tiempos_v2.json")
         };
@@ -80,6 +88,9 @@ impl HighScoreManager {
 
     pub fn save(&self) {
         if let Ok(json) = serde_json::to_string_pretty(&self.data) {
+            if let Some(parent) = self.file_path.parent() {
+                let _ = fs::create_dir_all(parent);
+            }
             let _ = fs::write(&self.file_path, json);
         }
     }
@@ -91,20 +102,22 @@ impl HighScoreManager {
             "experto" => &self.data.experto,
             _ => return false,
         };
-        if list.len() < 3 {
+        if list.len() < 5 {
             return true;
         }
         list.iter().any(|entry| seconds < entry.time)
     }
 
     pub fn add_score(&mut self, diff_id: &str, mut name: String, seconds: u32) {
-        if name.trim().is_empty() {
+        name = name.trim().to_string();
+        if name.is_empty() {
             name = "Anónimo".to_string();
         }
         if name.chars().count() > 16 {
             name = name.chars().take(16).collect();
         }
-        let today = "2026-09-11".to_string();
+
+        let today = Local::now().format("%Y-%m-%d").to_string();
         let entry = ScoreEntry { name, time: seconds, date: today };
 
         let list = match diff_id {
