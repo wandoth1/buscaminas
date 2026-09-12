@@ -205,7 +205,7 @@ impl MenuBar {
                 Item {
                     action: Some(MenuAction::Exit),
                     label: "Salir",
-                    shortcut: "Esc",
+                    shortcut: "",
                     checked: false,
                     separator: false,
                 },
