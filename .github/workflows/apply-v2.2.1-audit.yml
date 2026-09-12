@@ -31,7 +31,7 @@ jobs:
       - name: Apply deterministic patch
         run: python3 .github/scripts/apply_v2_2_1.py
 
-      - name: Apply strict Clippy cleanup
+      - name: Apply complete strict Clippy cleanup
         run: python3 .github/scripts/clippy_cleanup_v2_2_1.py
 
       - name: Remove stale tracked binaries
