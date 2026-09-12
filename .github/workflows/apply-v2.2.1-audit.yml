@@ -49,8 +49,9 @@ jobs:
       - name: Run tests
         run: cargo test --locked --all-targets --all-features
 
-      - name: Commit audited fixes
+      - name: Commit audited source fixes
         run: |
+          git checkout HEAD -- .github/workflows/build.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
