@@ -291,8 +291,10 @@ async fn main() {
                 mouse_middle_down = true;
             }
 
-            // Soltar botones
-            if is_mouse_button_released(MouseButton::Left) {
+            // Soltar botones. Exigimos que la pulsacion se haya registrado aqui:
+            // si el press se consumio en el menu o en un dialogo, el release
+            // posterior no debe revelar la casilla que haya bajo el cursor.
+            if is_mouse_button_released(MouseButton::Left) && mouse_left_down {
                 if smiley_pressed {
                     if smiley_rect.contains(mouse_pos) {
                         let (c, r, m) = current_diff.config();
@@ -393,7 +395,7 @@ async fn main() {
             if is_mouse_button_released(MouseButton::Right) {
                 mouse_right_down = false;
             }
-            if is_mouse_button_released(MouseButton::Middle) {
+            if is_mouse_button_released(MouseButton::Middle) && mouse_middle_down {
                 if let Some((r, c)) = hovered_cell {
                     match board.chord(r, c, now) {
                         RevealResult::Mine(mr, mc) => {
