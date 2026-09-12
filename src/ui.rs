@@ -1,7 +1,7 @@
-use macroquad::prelude::*;
 use crate::constants::*;
-use crate::render::{draw_raised_rect, draw_sunken_rect};
 use crate::highscores::HighScoreManager;
+use crate::render::{draw_raised_rect, draw_sunken_rect};
+use macroquad::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MenuAction {
@@ -26,7 +26,10 @@ pub struct MenuBar {
 
 impl MenuBar {
     pub fn new() -> Self {
-        Self { active_menu: None, input_consumed: false }
+        Self {
+            active_menu: None,
+            input_consumed: false,
+        }
     }
 
     pub fn draw(
@@ -36,11 +39,12 @@ impl MenuBar {
         allow_question: bool,
         sound_enabled: bool,
         particles_enabled: bool,
+        interactive: bool,
     ) -> Option<MenuAction> {
         let mut action = None;
         let mouse_pos = Vec2::from(mouse_position());
-        let raw_mouse_pressed = is_mouse_button_pressed(MouseButton::Left);
-        if !raw_mouse_pressed {
+        let raw_mouse_pressed = interactive && is_mouse_button_pressed(MouseButton::Left);
+        if interactive && !raw_mouse_pressed {
             self.input_consumed = false;
         }
         let mouse_pressed = raw_mouse_pressed && !self.input_consumed;
@@ -49,7 +53,14 @@ impl MenuBar {
         }
 
         draw_rectangle(0.0, 0.0, width, MENU_HEIGHT, COLOR_GRAY);
-        draw_line(0.0, MENU_HEIGHT - 1.0, width, MENU_HEIGHT - 1.0, 1.0, COLOR_DARK_GRAY);
+        draw_line(
+            0.0,
+            MENU_HEIGHT - 1.0,
+            width,
+            MENU_HEIGHT - 1.0,
+            1.0,
+            COLOR_DARK_GRAY,
+        );
 
         let menu_titles = ["Juego", "Opciones", "Ayuda"];
         let mut x_offset = 8.0;
@@ -63,7 +74,7 @@ impl MenuBar {
             let is_open = self.active_menu == Some(idx);
             let is_hover = rect.contains(mouse_pos);
 
-            if is_hover && self.active_menu.is_some() && !is_open {
+            if interactive && is_hover && self.active_menu.is_some() && !is_open {
                 self.active_menu = Some(idx);
             }
 
@@ -104,6 +115,7 @@ impl MenuBar {
         action
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn draw_dropdown(
         &self,
         menu_idx: usize,
@@ -127,26 +139,122 @@ impl MenuBar {
 
         let items: Vec<Item> = match menu_idx {
             0 => vec![
-                Item { action: Some(MenuAction::NewGame), label: "Nuevo", shortcut: "F2", checked: false, separator: false },
-                Item { action: None, label: "", shortcut: "", checked: false, separator: true },
-                Item { action: Some(MenuAction::DiffPrincipiante), label: "Principiante (9x9)", shortcut: "1", checked: matches!(current_diff, Difficulty::Principiante), separator: false },
-                Item { action: Some(MenuAction::DiffIntermedio), label: "Intermedio (16x16)", shortcut: "2", checked: matches!(current_diff, Difficulty::Intermedio), separator: false },
-                Item { action: Some(MenuAction::DiffExperto), label: "Experto (30x16)", shortcut: "3", checked: matches!(current_diff, Difficulty::Experto), separator: false },
-                Item { action: Some(MenuAction::DiffCustom), label: "Personalizado...", shortcut: "", checked: matches!(current_diff, Difficulty::Custom { .. }), separator: false },
-                Item { action: None, label: "", shortcut: "", checked: false, separator: true },
-                Item { action: Some(MenuAction::OpenRecords), label: "Mejores tiempos...", shortcut: "", checked: false, separator: false },
-                Item { action: None, label: "", shortcut: "", checked: false, separator: true },
-                Item { action: Some(MenuAction::Exit), label: "Salir", shortcut: "Esc", checked: false, separator: false },
+                Item {
+                    action: Some(MenuAction::NewGame),
+                    label: "Nuevo",
+                    shortcut: "F2",
+                    checked: false,
+                    separator: false,
+                },
+                Item {
+                    action: None,
+                    label: "",
+                    shortcut: "",
+                    checked: false,
+                    separator: true,
+                },
+                Item {
+                    action: Some(MenuAction::DiffPrincipiante),
+                    label: "Principiante (9x9)",
+                    shortcut: "1",
+                    checked: matches!(current_diff, Difficulty::Principiante),
+                    separator: false,
+                },
+                Item {
+                    action: Some(MenuAction::DiffIntermedio),
+                    label: "Intermedio (16x16)",
+                    shortcut: "2",
+                    checked: matches!(current_diff, Difficulty::Intermedio),
+                    separator: false,
+                },
+                Item {
+                    action: Some(MenuAction::DiffExperto),
+                    label: "Experto (30x16)",
+                    shortcut: "3",
+                    checked: matches!(current_diff, Difficulty::Experto),
+                    separator: false,
+                },
+                Item {
+                    action: Some(MenuAction::DiffCustom),
+                    label: "Personalizado...",
+                    shortcut: "",
+                    checked: matches!(current_diff, Difficulty::Custom { .. }),
+                    separator: false,
+                },
+                Item {
+                    action: None,
+                    label: "",
+                    shortcut: "",
+                    checked: false,
+                    separator: true,
+                },
+                Item {
+                    action: Some(MenuAction::OpenRecords),
+                    label: "Mejores tiempos...",
+                    shortcut: "",
+                    checked: false,
+                    separator: false,
+                },
+                Item {
+                    action: None,
+                    label: "",
+                    shortcut: "",
+                    checked: false,
+                    separator: true,
+                },
+                Item {
+                    action: Some(MenuAction::Exit),
+                    label: "Salir",
+                    shortcut: "Esc",
+                    checked: false,
+                    separator: false,
+                },
             ],
             1 => vec![
-                Item { action: Some(MenuAction::ToggleMarks), label: "Marcas (?) activadas", shortcut: "", checked: allow_question, separator: false },
-                Item { action: Some(MenuAction::ToggleSound), label: "Sonido activado", shortcut: "M", checked: sound_enabled, separator: false },
-                Item { action: Some(MenuAction::ToggleParticles), label: "Efectos y partículas", shortcut: "P", checked: particles_enabled, separator: false },
+                Item {
+                    action: Some(MenuAction::ToggleMarks),
+                    label: "Marcas (?) activadas",
+                    shortcut: "",
+                    checked: allow_question,
+                    separator: false,
+                },
+                Item {
+                    action: Some(MenuAction::ToggleSound),
+                    label: "Sonido activado",
+                    shortcut: "M",
+                    checked: sound_enabled,
+                    separator: false,
+                },
+                Item {
+                    action: Some(MenuAction::ToggleParticles),
+                    label: "Efectos y partículas",
+                    shortcut: "P",
+                    checked: particles_enabled,
+                    separator: false,
+                },
             ],
             2 => vec![
-                Item { action: Some(MenuAction::OpenHelp), label: "Instrucciones y reglas", shortcut: "", checked: false, separator: false },
-                Item { action: None, label: "", shortcut: "", checked: false, separator: true },
-                Item { action: Some(MenuAction::OpenAbout), label: "Acerca de Buscaminas v2", shortcut: "", checked: false, separator: false },
+                Item {
+                    action: Some(MenuAction::OpenHelp),
+                    label: "Instrucciones y reglas",
+                    shortcut: "",
+                    checked: false,
+                    separator: false,
+                },
+                Item {
+                    action: None,
+                    label: "",
+                    shortcut: "",
+                    checked: false,
+                    separator: true,
+                },
+                Item {
+                    action: Some(MenuAction::OpenAbout),
+                    label: "Acerca de Buscaminas v2",
+                    shortcut: "",
+                    checked: false,
+                    separator: false,
+                },
             ],
             _ => vec![],
         };
@@ -155,20 +263,39 @@ impl MenuBar {
             0 => 8.0f32,
             1 => 60.0f32,
             _ => 130.0f32,
-        }.min(screen_w - 220.0);
+        }
+        .min(screen_w - 220.0);
         let drop_y = MENU_HEIGHT;
         let drop_w = 215.0;
         let item_h = 24.0;
 
-        let total_h: f32 = items.iter().map(|it| if it.separator { 8.0 } else { item_h }).sum::<f32>() + 6.0;
+        let total_h: f32 = items
+            .iter()
+            .map(|it| if it.separator { 8.0 } else { item_h })
+            .sum::<f32>()
+            + 6.0;
         draw_raised_rect(drop_x, drop_y, drop_w, total_h, 2.0, Some(COLOR_GRAY));
 
         let mut curr_y = drop_y + 3.0;
 
         for item in items {
             if item.separator {
-                draw_line(drop_x + 4.0, curr_y + 3.0, drop_x + drop_w - 4.0, curr_y + 3.0, 1.0, COLOR_DARK_GRAY);
-                draw_line(drop_x + 4.0, curr_y + 4.0, drop_x + drop_w - 4.0, curr_y + 4.0, 1.0, COLOR_WHITE);
+                draw_line(
+                    drop_x + 4.0,
+                    curr_y + 3.0,
+                    drop_x + drop_w - 4.0,
+                    curr_y + 3.0,
+                    1.0,
+                    COLOR_DARK_GRAY,
+                );
+                draw_line(
+                    drop_x + 4.0,
+                    curr_y + 4.0,
+                    drop_x + drop_w - 4.0,
+                    curr_y + 4.0,
+                    1.0,
+                    COLOR_WHITE,
+                );
                 curr_y += 8.0;
                 continue;
             }
@@ -177,7 +304,13 @@ impl MenuBar {
             let is_hover = item_rect.contains(mouse_pos);
 
             if is_hover {
-                draw_rectangle(item_rect.x, item_rect.y, item_rect.w, item_rect.h, Color::new(0.0, 0.0, 128.0 / 255.0, 1.0));
+                draw_rectangle(
+                    item_rect.x,
+                    item_rect.y,
+                    item_rect.w,
+                    item_rect.h,
+                    Color::new(0.0, 0.0, 128.0 / 255.0, 1.0),
+                );
                 if mouse_pressed {
                     selected_action = item.action;
                 }
@@ -196,8 +329,18 @@ impl MenuBar {
             draw_text(item.label, drop_x + 24.0, curr_y + 16.0, 14.0, text_col);
             if !item.shortcut.is_empty() {
                 let s_dim = measure_text(item.shortcut, None, 13, 1.0);
-                let s_col = if is_hover { COLOR_LIGHT_GRAY } else { COLOR_DARK_GRAY };
-                draw_text(item.shortcut, drop_x + drop_w - s_dim.width - 12.0, curr_y + 16.0, 13.0, s_col);
+                let s_col = if is_hover {
+                    COLOR_LIGHT_GRAY
+                } else {
+                    COLOR_DARK_GRAY
+                };
+                draw_text(
+                    item.shortcut,
+                    drop_x + drop_w - s_dim.width - 12.0,
+                    curr_y + 16.0,
+                    13.0,
+                    s_col,
+                );
             }
 
             curr_y += item_h;
@@ -209,9 +352,20 @@ impl MenuBar {
 
 pub enum DialogState {
     None,
-    Custom { cols: usize, rows: usize, mines: usize },
-    HighScores { tab: &'static str },
-    NewRecord { diff_name: String, diff_id: String, seconds: u32, name: String },
+    Custom {
+        cols: usize,
+        rows: usize,
+        mines: usize,
+    },
+    HighScores {
+        tab: &'static str,
+    },
+    NewRecord {
+        diff_name: String,
+        diff_id: String,
+        seconds: u32,
+        name: String,
+    },
     Help,
     About,
 }
@@ -234,7 +388,13 @@ pub fn draw_dialog(
         return DialogEvent::None;
     }
 
-    draw_rectangle(0.0, 0.0, screen_w, screen_h, Color::new(0.0, 0.0, 0.0, 0.45));
+    draw_rectangle(
+        0.0,
+        0.0,
+        screen_w,
+        screen_h,
+        Color::new(0.0, 0.0, 0.0, 0.45),
+    );
 
     let mouse_pos = Vec2::from(mouse_position());
     let mouse_pressed = is_mouse_button_pressed(MouseButton::Left);
@@ -244,13 +404,40 @@ pub fn draw_dialog(
         let dy = ((screen_h - dh) / 2.0).floor();
         draw_raised_rect(dx, dy, dw, dh, 3.0, Some(COLOR_GRAY));
 
-        draw_rectangle(dx + 3.0, dy + 3.0, dw - 6.0, 22.0, Color::new(10.0 / 255.0, 36.0 / 255.0, 106.0 / 255.0, 1.0));
+        draw_rectangle(
+            dx + 3.0,
+            dy + 3.0,
+            dw - 6.0,
+            22.0,
+            Color::new(10.0 / 255.0, 36.0 / 255.0, 106.0 / 255.0, 1.0),
+        );
         draw_text(title, dx + 8.0, dy + 18.0, 14.0, COLOR_WHITE);
 
         let close_rect = Rect::new(dx + dw - 21.0, dy + 5.0, 16.0, 16.0);
-        draw_raised_rect(close_rect.x, close_rect.y, close_rect.w, close_rect.h, 1.0, Some(COLOR_GRAY));
-        draw_line(close_rect.x + 4.0, close_rect.y + 4.0, close_rect.x + 11.0, close_rect.y + 11.0, 2.0, COLOR_BLACK);
-        draw_line(close_rect.x + 4.0, close_rect.y + 11.0, close_rect.x + 11.0, close_rect.y + 4.0, 2.0, COLOR_BLACK);
+        draw_raised_rect(
+            close_rect.x,
+            close_rect.y,
+            close_rect.w,
+            close_rect.h,
+            1.0,
+            Some(COLOR_GRAY),
+        );
+        draw_line(
+            close_rect.x + 4.0,
+            close_rect.y + 4.0,
+            close_rect.x + 11.0,
+            close_rect.y + 11.0,
+            2.0,
+            COLOR_BLACK,
+        );
+        draw_line(
+            close_rect.x + 4.0,
+            close_rect.y + 11.0,
+            close_rect.x + 11.0,
+            close_rect.y + 4.0,
+            2.0,
+            COLOR_BLACK,
+        );
 
         (dx, dy, close_rect)
     };
@@ -262,7 +449,13 @@ pub fn draw_dialog(
             draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, COLOR_BLACK);
         }
         let dim = measure_text(text, None, 14, 1.0);
-        draw_text(text, rect.x + (rect.w - dim.width) / 2.0, rect.y + (rect.h + dim.height) / 2.0 - 1.0, 14.0, COLOR_BLACK);
+        draw_text(
+            text,
+            rect.x + (rect.w - dim.width) / 2.0,
+            rect.y + (rect.h + dim.height) / 2.0 - 1.0,
+            14.0,
+            COLOR_BLACK,
+        );
         is_hover && mouse_pressed
     };
 
@@ -277,25 +470,37 @@ pub fn draw_dialog(
             let mut y = dy + 45.0;
             draw_text("Columnas (9 - 40):", dx + 16.0, y + 16.0, 14.0, COLOR_BLACK);
             draw_sunken_rect(dx + 160.0, y, 48.0, 22.0, 2.0, Some(COLOR_WHITE));
-            draw_text(&cols.to_string(), dx + 175.0, y + 16.0, 14.0, COLOR_BLACK);
-            if draw_btn("-", Rect::new(dx + 215.0, y, 22.0, 22.0), false) { *cols = (*cols).saturating_sub(1).max(9); }
-            if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) { *cols = (*cols + 1).min(40); }
+            draw_text(cols.to_string(), dx + 175.0, y + 16.0, 14.0, COLOR_BLACK);
+            if draw_btn("-", Rect::new(dx + 215.0, y, 22.0, 22.0), false) {
+                *cols = (*cols).saturating_sub(1).max(9);
+            }
+            if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) {
+                *cols = (*cols + 1).min(40);
+            }
 
             y += 36.0;
             draw_text("Filas (9 - 24):", dx + 16.0, y + 16.0, 14.0, COLOR_BLACK);
             draw_sunken_rect(dx + 160.0, y, 48.0, 22.0, 2.0, Some(COLOR_WHITE));
-            draw_text(&rows.to_string(), dx + 175.0, y + 16.0, 14.0, COLOR_BLACK);
-            if draw_btn("-", Rect::new(dx + 215.0, y, 22.0, 22.0), false) { *rows = (*rows).saturating_sub(1).max(9); }
-            if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) { *rows = (*rows + 1).min(24); }
+            draw_text(rows.to_string(), dx + 175.0, y + 16.0, 14.0, COLOR_BLACK);
+            if draw_btn("-", Rect::new(dx + 215.0, y, 22.0, 22.0), false) {
+                *rows = (*rows).saturating_sub(1).max(9);
+            }
+            if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) {
+                *rows = (*rows + 1).min(24);
+            }
 
             y += 36.0;
             let max_m = (*cols * *rows).saturating_sub(1);
             *mines = (*mines).clamp(10, max_m);
             draw_text("Minas:", dx + 16.0, y + 16.0, 14.0, COLOR_BLACK);
             draw_sunken_rect(dx + 160.0, y, 48.0, 22.0, 2.0, Some(COLOR_WHITE));
-            draw_text(&mines.to_string(), dx + 172.0, y + 16.0, 14.0, COLOR_BLACK);
-            if draw_btn("-", Rect::new(dx + 215.0, y, 22.0, 22.0), false) { *mines = (*mines).saturating_sub(5).max(10); }
-            if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) { *mines = (*mines + 5).min(max_m); }
+            draw_text(mines.to_string(), dx + 172.0, y + 16.0, 14.0, COLOR_BLACK);
+            if draw_btn("-", Rect::new(dx + 215.0, y, 22.0, 22.0), false) {
+                *mines = (*mines).saturating_sub(5).max(10);
+            }
+            if draw_btn("+", Rect::new(dx + 242.0, y, 22.0, 22.0), false) {
+                *mines = (*mines + 5).min(max_m);
+            }
 
             let btn_ok = Rect::new(dx + 45.0, dy + 175.0, 95.0, 26.0);
             let btn_cancel = Rect::new(dx + 160.0, dy + 175.0, 95.0, 26.0);
@@ -313,27 +518,61 @@ pub fn draw_dialog(
         }
         DialogState::HighScores { tab } => {
             let (dx, dy, close_rect) = draw_window("Mejores Tiempos", 360.0, 280.0);
-            if close_rect.contains(mouse_pos) && mouse_pressed || is_key_pressed(KeyCode::Escape) || is_key_pressed(KeyCode::Enter) {
+            if close_rect.contains(mouse_pos) && mouse_pressed
+                || is_key_pressed(KeyCode::Escape)
+                || is_key_pressed(KeyCode::Enter)
+            {
                 *dialog = DialogState::None;
                 return DialogEvent::Close;
             }
 
-            let tabs = [("Principiante", "principiante"), ("Intermedio", "intermedio"), ("Experto", "experto")];
+            let tabs = [
+                ("Principiante", "principiante"),
+                ("Intermedio", "intermedio"),
+                ("Experto", "experto"),
+            ];
             let mut tx = dx + 14.0;
             for (title, key) in tabs {
                 let tab_rect = Rect::new(tx, dy + 34.0, 106.0, 24.0);
                 let is_active = *tab == key;
                 if is_active {
-                    draw_raised_rect(tab_rect.x, tab_rect.y, tab_rect.w, tab_rect.h, 2.0, Some(COLOR_GRAY));
-                    draw_line(tab_rect.x + 2.0, tab_rect.bottom() - 1.0, tab_rect.right() - 2.0, tab_rect.bottom() - 1.0, 2.0, COLOR_GRAY);
+                    draw_raised_rect(
+                        tab_rect.x,
+                        tab_rect.y,
+                        tab_rect.w,
+                        tab_rect.h,
+                        2.0,
+                        Some(COLOR_GRAY),
+                    );
+                    draw_line(
+                        tab_rect.x + 2.0,
+                        tab_rect.bottom() - 1.0,
+                        tab_rect.right() - 2.0,
+                        tab_rect.bottom() - 1.0,
+                        2.0,
+                        COLOR_GRAY,
+                    );
                 } else {
-                    draw_sunken_rect(tab_rect.x, tab_rect.y, tab_rect.w, tab_rect.h, 1.0, Some(COLOR_LIGHT_GRAY));
+                    draw_sunken_rect(
+                        tab_rect.x,
+                        tab_rect.y,
+                        tab_rect.w,
+                        tab_rect.h,
+                        1.0,
+                        Some(COLOR_LIGHT_GRAY),
+                    );
                     if tab_rect.contains(mouse_pos) && mouse_pressed {
                         *tab = key;
                     }
                 }
                 let dim = measure_text(title, None, 13, 1.0);
-                draw_text(title, tab_rect.x + (tab_rect.w - dim.width) / 2.0, tab_rect.y + 16.0, 13.0, COLOR_BLACK);
+                draw_text(
+                    title,
+                    tab_rect.x + (tab_rect.w - dim.width) / 2.0,
+                    tab_rect.y + 16.0,
+                    13.0,
+                    COLOR_BLACK,
+                );
                 tx += 110.0;
             }
 
@@ -343,7 +582,13 @@ pub fn draw_dialog(
             let panel_h = 160.0;
             draw_sunken_rect(panel_x, panel_y, panel_w, panel_h, 2.0, Some(COLOR_WHITE));
 
-            draw_rectangle(panel_x + 2.0, panel_y + 2.0, panel_w - 4.0, 22.0, Color::new(0.9, 0.9, 0.9, 1.0));
+            draw_rectangle(
+                panel_x + 2.0,
+                panel_y + 2.0,
+                panel_w - 4.0,
+                22.0,
+                Color::new(0.9, 0.9, 0.9, 1.0),
+            );
             draw_text("#", panel_x + 10.0, panel_y + 16.0, 13.0, COLOR_BLACK);
             draw_text("Nombre", panel_x + 35.0, panel_y + 16.0, 13.0, COLOR_BLACK);
             draw_text("Tiempo", panel_x + 185.0, panel_y + 16.0, 13.0, COLOR_BLACK);
@@ -352,42 +597,97 @@ pub fn draw_dialog(
             let scores = highscores.get_scores(tab);
             let mut row_y = panel_y + 38.0;
             for (i, s) in scores.iter().enumerate() {
-                let col = if i == 0 { Color::new(0.0, 0.0, 0.6, 1.0) } else { COLOR_BLACK };
-                draw_text(&(i + 1).to_string(), panel_x + 10.0, row_y, 13.0, col);
+                let col = if i == 0 {
+                    Color::new(0.0, 0.0, 0.6, 1.0)
+                } else {
+                    COLOR_BLACK
+                };
+                draw_text((i + 1).to_string(), panel_x + 10.0, row_y, 13.0, col);
                 draw_text(&s.name, panel_x + 35.0, row_y, 13.0, col);
-                draw_text(&format!("{}s", s.time), panel_x + 185.0, row_y, 13.0, col);
+                draw_text(format!("{}s", s.time), panel_x + 185.0, row_y, 13.0, col);
                 draw_text(&s.date, panel_x + 250.0, row_y, 13.0, COLOR_DARK_GRAY);
                 row_y += 24.0;
             }
 
-            if draw_btn("Restablecer", Rect::new(dx + 20.0, dy + 235.0, 110.0, 26.0), false) {
+            if draw_btn(
+                "Restablecer",
+                Rect::new(dx + 20.0, dy + 235.0, 110.0, 26.0),
+                false,
+            ) {
                 highscores.reset_defaults();
                 return DialogEvent::ResetHighScores;
             }
-            if draw_btn("Aceptar", Rect::new(dx + 240.0, dy + 235.0, 100.0, 26.0), true) {
+            if draw_btn(
+                "Aceptar",
+                Rect::new(dx + 240.0, dy + 235.0, 100.0, 26.0),
+                true,
+            ) {
                 *dialog = DialogState::None;
                 return DialogEvent::Close;
             }
         }
-        DialogState::NewRecord { diff_name, diff_id, seconds, name } => {
+        DialogState::NewRecord {
+            diff_name,
+            diff_id,
+            seconds,
+            name,
+        } => {
             let (dx, dy, close_rect) = draw_window("¡Nuevo Récord!", 320.0, 210.0);
             if close_rect.contains(mouse_pos) && mouse_pressed || is_key_pressed(KeyCode::Escape) {
                 *dialog = DialogState::None;
                 return DialogEvent::Close;
             }
 
-            draw_text(&format!("¡Felicidades! Ganaste en {}", diff_name), dx + 20.0, dy + 45.0, 14.0, COLOR_BLACK);
-            draw_text(&format!("Tiempo récord: {} segundos", seconds), dx + 20.0, dy + 68.0, 15.0, Color::new(0.0, 0.5, 0.0, 1.0));
-            draw_text("Introduce tu nombre:", dx + 20.0, dy + 95.0, 14.0, COLOR_BLACK);
+            draw_text(
+                format!("¡Felicidades! Ganaste en {}", diff_name),
+                dx + 20.0,
+                dy + 45.0,
+                14.0,
+                COLOR_BLACK,
+            );
+            draw_text(
+                format!("Tiempo récord: {} segundos", seconds),
+                dx + 20.0,
+                dy + 68.0,
+                15.0,
+                Color::new(0.0, 0.5, 0.0, 1.0),
+            );
+            draw_text(
+                "Introduce tu nombre:",
+                dx + 20.0,
+                dy + 95.0,
+                14.0,
+                COLOR_BLACK,
+            );
 
             let box_rect = Rect::new(dx + 20.0, dy + 108.0, 280.0, 28.0);
-            draw_sunken_rect(box_rect.x, box_rect.y, box_rect.w, box_rect.h, 2.0, Some(COLOR_WHITE));
-            draw_text(name.as_str(), box_rect.x + 8.0, box_rect.y + 19.0, 15.0, COLOR_BLACK);
+            draw_sunken_rect(
+                box_rect.x,
+                box_rect.y,
+                box_rect.w,
+                box_rect.h,
+                2.0,
+                Some(COLOR_WHITE),
+            );
+            draw_text(
+                name.as_str(),
+                box_rect.x + 8.0,
+                box_rect.y + 19.0,
+                15.0,
+                COLOR_BLACK,
+            );
 
-            if ((get_time() * 2.0) as usize) % 2 == 0 {
+            if ((get_time() * 2.0) as usize).is_multiple_of(2) {
                 let dim = measure_text(name.as_str(), None, 15, 1.0);
                 let cx = box_rect.x + 8.0 + dim.width + 2.0;
-                draw_line(cx, box_rect.y + 5.0, cx, box_rect.y + 23.0, 2.0, COLOR_BLACK);
+                draw_line(
+                    cx,
+                    box_rect.y + 5.0,
+                    cx,
+                    box_rect.y + 23.0,
+                    2.0,
+                    COLOR_BLACK,
+                );
             }
 
             while let Some(c) = get_char_pressed() {
@@ -399,8 +699,17 @@ pub fn draw_dialog(
                 name.pop();
             }
 
-            if draw_btn("Guardar", Rect::new(dx + 105.0, dy + 155.0, 110.0, 28.0), true) || is_key_pressed(KeyCode::Enter) {
-                let saved_name = if name.trim().is_empty() { "Anónimo".to_string() } else { name.clone() };
+            if draw_btn(
+                "Guardar",
+                Rect::new(dx + 105.0, dy + 155.0, 110.0, 28.0),
+                true,
+            ) || is_key_pressed(KeyCode::Enter)
+            {
+                let saved_name = if name.trim().is_empty() {
+                    "Anónimo".to_string()
+                } else {
+                    name.clone()
+                };
                 let d_id = diff_id.clone();
                 let secs = *seconds;
                 *dialog = DialogState::None;
@@ -408,20 +717,36 @@ pub fn draw_dialog(
             }
         }
         DialogState::Help => {
-            let (dx, dy, close_rect) = draw_window("Cómo Jugar al Buscaminas v2 (Rust)", 400.0, 310.0);
-            if close_rect.contains(mouse_pos) && mouse_pressed || is_key_pressed(KeyCode::Escape) || is_key_pressed(KeyCode::Enter) {
+            let (dx, dy, close_rect) =
+                draw_window("Cómo Jugar al Buscaminas v2 (Rust)", 400.0, 310.0);
+            if close_rect.contains(mouse_pos) && mouse_pressed
+                || is_key_pressed(KeyCode::Escape)
+                || is_key_pressed(KeyCode::Enter)
+            {
                 *dialog = DialogState::None;
                 return DialogEvent::Close;
             }
 
             let instructions = [
-                ("Objetivo:", "Descubrir todas las casillas que no contengan minas."),
+                (
+                    "Objetivo:",
+                    "Descubrir todas las casillas que no contengan minas.",
+                ),
                 ("Clic Izquierdo:", "Revelar casilla oculta."),
-                ("Clic Derecho:", "Poner o quitar bandera / interrogación (?)."),
+                (
+                    "Clic Derecho:",
+                    "Poner o quitar bandera / interrogación (?).",
+                ),
                 ("Chording:", "Clic central o izquierdo+derecho en número:"),
                 ("", "si tiene sus banderas, revela las vecinas al instante."),
-                ("Primer Clic Seguro:", "¡La primera casilla siempre abre un área limpia!"),
-                ("Atajos:", "F2 = Nuevo | 1, 2, 3 = Dificultad | M = Sonido | P = Partículas"),
+                (
+                    "Primer Clic Seguro:",
+                    "¡La primera casilla siempre abre un área limpia!",
+                ),
+                (
+                    "Atajos:",
+                    "F2 = Nuevo | 1, 2, 3 = Dificultad | M = Sonido | P = Partículas",
+                ),
             ];
 
             let mut y = dy + 45.0;
@@ -433,25 +758,48 @@ pub fn draw_dialog(
                 y += 28.0;
             }
 
-            if draw_btn("Entendido", Rect::new(dx + 145.0, dy + 265.0, 110.0, 26.0), true) {
+            if draw_btn(
+                "Entendido",
+                Rect::new(dx + 145.0, dy + 265.0, 110.0, 26.0),
+                true,
+            ) {
                 *dialog = DialogState::None;
                 return DialogEvent::Close;
             }
         }
         DialogState::About => {
             let (dx, dy, close_rect) = draw_window("Acerca de Buscaminas v2", 340.0, 240.0);
-            if close_rect.contains(mouse_pos) && mouse_pressed || is_key_pressed(KeyCode::Escape) || is_key_pressed(KeyCode::Enter) {
+            if close_rect.contains(mouse_pos) && mouse_pressed
+                || is_key_pressed(KeyCode::Escape)
+                || is_key_pressed(KeyCode::Enter)
+            {
                 *dialog = DialogState::None;
                 return DialogEvent::Close;
             }
 
             let lines = [
-                ("Buscaminas v2.2 (Edición Rust)", 16.0, Color::new(0.0, 0.1, 0.5, 1.0)),
+                (
+                    "Buscaminas v2.2.1 (Edición Rust)",
+                    16.0,
+                    Color::new(0.0, 0.1, 0.5, 1.0),
+                ),
                 ("Desarrollado en Rust con Macroquad", 13.0, COLOR_BLACK),
-                ("Aceleración nativa por hardware a 60+ FPS,", 13.0, COLOR_VERY_DARK),
+                (
+                    "Aceleración nativa por hardware a 60+ FPS,",
+                    13.0,
+                    COLOR_VERY_DARK,
+                ),
                 ("audio procedural multiplataforma,", 13.0, COLOR_VERY_DARK),
-                ("sistema de partículas y chording auténtico.", 13.0, COLOR_VERY_DARK),
-                ("¡Rendimiento ultrarrápido y seguro en memoria!", 13.0, Color::new(0.0, 0.45, 0.0, 1.0)),
+                (
+                    "sistema de partículas y chording auténtico.",
+                    13.0,
+                    COLOR_VERY_DARK,
+                ),
+                (
+                    "¡Rendimiento ultrarrápido y seguro en memoria!",
+                    13.0,
+                    Color::new(0.0, 0.45, 0.0, 1.0),
+                ),
             ];
 
             let mut y = dy + 50.0;
@@ -461,7 +809,11 @@ pub fn draw_dialog(
                 y += 24.0;
             }
 
-            if draw_btn("Aceptar", Rect::new(dx + 120.0, dy + 195.0, 100.0, 26.0), true) {
+            if draw_btn(
+                "Aceptar",
+                Rect::new(dx + 120.0, dy + 195.0, 100.0, 26.0),
+                true,
+            ) {
                 *dialog = DialogState::None;
                 return DialogEvent::Close;
             }

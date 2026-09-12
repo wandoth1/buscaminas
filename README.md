@@ -1,10 +1,10 @@
-# 🦀 Buscaminas v2.2 (Rust · Windows & macOS)
+# 🦀 Buscaminas v2.2.1 (Rust · Windows & macOS)
 
 Versión del clásico **Buscaminas** reescrita en **Rust** con Macroquad. El mismo código fuente se compila de forma nativa para **Windows** y **macOS**, incluyendo un binario universal para **Apple Silicon e Intel**.
 
 ## Descargas
 
-Las versiones compiladas se publican en **GitHub Releases**. Es preferible descargar desde allí en lugar de utilizar binarios almacenados dentro del árbol del repositorio.
+Las versiones compiladas se publican exclusivamente en **GitHub Releases**; el repositorio mantiene sólo código fuente y recursos de construcción.
 
 ### Windows
 
@@ -48,11 +48,10 @@ Para ejecutar durante el desarrollo:
 cargo run --locked --release
 ```
 
-En Windows también se incluye `compilar_v2.bat` como acceso rápido.
 
 ## Calidad y CI
 
-Cada pull request y actualización de `main` ejecuta comprobaciones automáticas antes de generar los builds nativos. La CI comprueba compilación con el `Cargo.lock`, ejecuta Clippy y los tests, y además informa de diferencias de formato con `rustfmt`.
+Cada pull request y actualización de `main` ejecuta comprobaciones automáticas antes de generar los builds nativos. La CI comprueba compilación con el `Cargo.lock`, exige formato `rustfmt`, ejecuta Clippy con los warnings tratados como errores y ejecuta los tests.
 
 En macOS la CI compila por separado para:
 

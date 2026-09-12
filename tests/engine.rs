@@ -37,3 +37,47 @@ fn excessive_mine_count_is_clamped_to_leave_one_safe_cell() {
     let board = Board::new(2, 2, 99);
     assert_eq!(board.total_mines, 3);
 }
+
+#[test]
+fn question_cell_can_be_revealed_directly() {
+    let mut board = Board::new(3, 3, 1);
+    let idx = board.idx(1, 1);
+    board.grid[idx].state = CellState::Question;
+
+    let result = board.reveal(1, 1, 1.0);
+
+    assert!(!matches!(
+        result,
+        RevealResult::None | RevealResult::Mine(_, _)
+    ));
+    assert_eq!(board.grid[idx].state, CellState::Revealed);
+}
+
+#[test]
+fn one_by_one_board_is_safe_and_does_not_panic() {
+    let mut board = Board::new(1, 1, 1);
+    assert_eq!(board.total_mines, 0);
+    assert!(matches!(board.reveal(0, 0, 1.0), RevealResult::Win(_)));
+}
+
+#[test]
+fn out_of_bounds_actions_are_ignored() {
+    let mut board = Board::new(9, 9, 10);
+    assert_eq!(board.reveal(9, 0, 1.0), RevealResult::None);
+    assert_eq!(board.toggle_flag(0, 9), FlagAction::None);
+
+    let _ = board.reveal(0, 0, 2.0);
+    assert_eq!(board.chord(99, 99, 3.0), RevealResult::None);
+}
+
+#[test]
+fn paused_time_is_excluded_from_elapsed_seconds() {
+    let mut board = Board::new(9, 9, 10);
+    let _ = board.reveal(4, 4, 10.0);
+
+    board.pause(15.0);
+    assert_eq!(board.elapsed_seconds(25.0), 5);
+
+    board.resume(30.0);
+    assert_eq!(board.elapsed_seconds(35.0), 10);
+}

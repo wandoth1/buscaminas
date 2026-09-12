@@ -15,7 +15,8 @@ pub const COLOR_DARK_GRAY: Color = Color::new(128.0 / 255.0, 128.0 / 255.0, 128.
 pub const COLOR_VERY_DARK: Color = Color::new(64.0 / 255.0, 64.0 / 255.0, 64.0 / 255.0, 1.0);
 pub const COLOR_BLACK: Color = Color::new(0.0, 0.0, 0.0, 1.0);
 pub const COLOR_RED: Color = Color::new(230.0 / 255.0, 20.0 / 255.0, 20.0 / 255.0, 1.0);
-pub const COLOR_MINE_EXPLODED_BG: Color = Color::new(235.0 / 255.0, 50.0 / 255.0, 50.0 / 255.0, 1.0);
+pub const COLOR_MINE_EXPLODED_BG: Color =
+    Color::new(235.0 / 255.0, 50.0 / 255.0, 50.0 / 255.0, 1.0);
 
 // Colores para displays LED
 pub const LED_BG: Color = Color::new(15.0 / 255.0, 0.0, 0.0, 1.0);
@@ -24,11 +25,11 @@ pub const LED_OFF: Color = Color::new(55.0 / 255.0, 10.0 / 255.0, 10.0 / 255.0, 
 
 pub fn get_number_color(n: u8) -> Color {
     match n {
-        1 => Color::new(0.0, 0.0, 230.0 / 255.0, 1.0),       // Azul
-        2 => Color::new(0.0, 128.0 / 255.0, 0.0, 1.0),       // Verde
-        3 => Color::new(220.0 / 255.0, 0.0, 0.0, 1.0),       // Rojo
-        4 => Color::new(0.0, 0.0, 130.0 / 255.0, 1.0),       // Azul marino
-        5 => Color::new(128.0 / 255.0, 0.0, 0.0, 1.0),       // Granate
+        1 => Color::new(0.0, 0.0, 230.0 / 255.0, 1.0), // Azul
+        2 => Color::new(0.0, 128.0 / 255.0, 0.0, 1.0), // Verde
+        3 => Color::new(220.0 / 255.0, 0.0, 0.0, 1.0), // Rojo
+        4 => Color::new(0.0, 0.0, 130.0 / 255.0, 1.0), // Azul marino
+        5 => Color::new(128.0 / 255.0, 0.0, 0.0, 1.0), // Granate
         6 => Color::new(0.0, 128.0 / 255.0, 128.0 / 255.0, 1.0), // Verde azulado
         7 => Color::new(16.0 / 255.0, 16.0 / 255.0, 16.0 / 255.0, 1.0), // Negro
         8 => Color::new(110.0 / 255.0, 110.0 / 255.0, 110.0 / 255.0, 1.0), // Gris
@@ -65,7 +66,11 @@ pub enum Difficulty {
     Principiante,
     Intermedio,
     Experto,
-    Custom { cols: usize, rows: usize, mines: usize },
+    Custom {
+        cols: usize,
+        rows: usize,
+        mines: usize,
+    },
 }
 
 impl Difficulty {

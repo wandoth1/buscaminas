@@ -1,6 +1,6 @@
-use macroquad::prelude::*;
 use crate::constants::*;
 use crate::engine::Cell;
+use macroquad::prelude::*;
 
 // =========================================================================
 // Sistema de Partículas (Confeti y Escombros de Explosión)
@@ -23,7 +23,9 @@ pub struct ParticleSystem {
 
 impl ParticleSystem {
     pub fn new() -> Self {
-        Self { particles: Vec::new() }
+        Self {
+            particles: Vec::new(),
+        }
     }
 
     pub fn spawn_confetti(&mut self, center_x: f32, center_y: f32, count: usize) {
@@ -110,14 +112,32 @@ pub fn draw_sunken_rect(x: f32, y: f32, w: f32, h: f32, border: f32, bg_color: O
     }
     for i in 0..(border as usize) {
         let fi = i as f32;
-        let c_dark = if i == 0 { COLOR_DARK_GRAY } else { COLOR_VERY_DARK };
+        let c_dark = if i == 0 {
+            COLOR_DARK_GRAY
+        } else {
+            COLOR_VERY_DARK
+        };
         let c_light = COLOR_WHITE;
         // Arriba e Izquierda
         draw_line(x + fi, y + fi, x + w - 1.0 - fi, y + fi, 1.0, c_dark);
         draw_line(x + fi, y + fi, x + fi, y + h - 1.0 - fi, 1.0, c_dark);
         // Abajo y Derecha
-        draw_line(x + fi, y + h - 1.0 - fi, x + w - 1.0 - fi, y + h - 1.0 - fi, 1.0, c_light);
-        draw_line(x + w - 1.0 - fi, y + fi, x + w - 1.0 - fi, y + h - 1.0 - fi, 1.0, c_light);
+        draw_line(
+            x + fi,
+            y + h - 1.0 - fi,
+            x + w - 1.0 - fi,
+            y + h - 1.0 - fi,
+            1.0,
+            c_light,
+        );
+        draw_line(
+            x + w - 1.0 - fi,
+            y + fi,
+            x + w - 1.0 - fi,
+            y + h - 1.0 - fi,
+            1.0,
+            c_light,
+        );
     }
 }
 
@@ -128,13 +148,31 @@ pub fn draw_raised_rect(x: f32, y: f32, w: f32, h: f32, border: f32, bg_color: O
     for i in 0..(border as usize) {
         let fi = i as f32;
         let c_light = COLOR_WHITE;
-        let c_dark = if i == 0 { COLOR_DARK_GRAY } else { COLOR_VERY_DARK };
+        let c_dark = if i == 0 {
+            COLOR_DARK_GRAY
+        } else {
+            COLOR_VERY_DARK
+        };
         // Arriba e Izquierda
         draw_line(x + fi, y + fi, x + w - 1.0 - fi, y + fi, 1.0, c_light);
         draw_line(x + fi, y + fi, x + fi, y + h - 1.0 - fi, 1.0, c_light);
         // Abajo y Derecha
-        draw_line(x + fi, y + h - 1.0 - fi, x + w - 1.0 - fi, y + h - 1.0 - fi, 1.0, c_dark);
-        draw_line(x + w - 1.0 - fi, y + fi, x + w - 1.0 - fi, y + h - 1.0 - fi, 1.0, c_dark);
+        draw_line(
+            x + fi,
+            y + h - 1.0 - fi,
+            x + w - 1.0 - fi,
+            y + h - 1.0 - fi,
+            1.0,
+            c_dark,
+        );
+        draw_line(
+            x + w - 1.0 - fi,
+            y + fi,
+            x + w - 1.0 - fi,
+            y + h - 1.0 - fi,
+            1.0,
+            c_dark,
+        );
     }
 }
 
@@ -222,8 +260,19 @@ pub fn draw_smiley(x: f32, y: f32, size: f32, state: SmileyState, pressed: bool)
     let radius = 14.0;
 
     // Círculo amarillo
-    draw_circle(cx, cy, radius, Color::new(1.0, 230.0 / 255.0, 20.0 / 255.0, 1.0));
-    draw_circle_lines(cx, cy, radius, 1.0, Color::new(50.0 / 255.0, 40.0 / 255.0, 0.0, 1.0));
+    draw_circle(
+        cx,
+        cy,
+        radius,
+        Color::new(1.0, 230.0 / 255.0, 20.0 / 255.0, 1.0),
+    );
+    draw_circle_lines(
+        cx,
+        cy,
+        radius,
+        1.0,
+        Color::new(50.0 / 255.0, 40.0 / 255.0, 0.0, 1.0),
+    );
 
     match state {
         SmileyState::Normal => {
@@ -284,7 +333,11 @@ pub fn draw_mine(cx: f32, cy: f32, exploded: bool) {
     draw_circle(cx, cy, 6.0, COLOR_BLACK);
     draw_circle(cx - 2.0, cy - 2.0, 2.0, COLOR_WHITE);
 
-    let core_col = if exploded { Color::new(1.0, 0.2, 0.2, 1.0) } else { Color::new(0.7, 0.1, 0.1, 1.0) };
+    let core_col = if exploded {
+        Color::new(1.0, 0.2, 0.2, 1.0)
+    } else {
+        Color::new(0.7, 0.1, 0.1, 1.0)
+    };
     draw_circle(cx + 2.0, cy + 2.0, 1.0, core_col);
 }
 
@@ -351,12 +404,22 @@ pub fn draw_cell(
                 draw_mine(cx, cy, false);
             } else {
                 draw_raised_rect(x, y, CELL_SIZE, CELL_SIZE, 3.0, Some(COLOR_GRAY));
-                draw_text("?", cx - 5.0, cy + 7.0, 24.0, Color::new(0.0, 0.0, 0.6, 1.0));
+                draw_text(
+                    "?",
+                    cx - 5.0,
+                    cy + 7.0,
+                    24.0,
+                    Color::new(0.0, 0.0, 0.6, 1.0),
+                );
             }
         }
         CellState::Revealed => {
             if cell.is_mine {
-                let bg = if is_exploded { COLOR_MINE_EXPLODED_BG } else { COLOR_GRAY };
+                let bg = if is_exploded {
+                    COLOR_MINE_EXPLODED_BG
+                } else {
+                    COLOR_GRAY
+                };
                 draw_sunken_rect(x, y, CELL_SIZE, CELL_SIZE, 1.0, Some(bg));
                 draw_mine(cx, cy, is_exploded);
             } else {
