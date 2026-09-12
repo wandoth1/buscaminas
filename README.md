@@ -10,11 +10,15 @@ Las versiones compiladas se publican en **GitHub Releases**. Es preferible desca
 
 Descarga `Buscaminas_v2.exe` desde Releases y ejecútalo directamente. No requiere instalar Rust ni un runtime adicional.
 
+Los récords se guardan en `%LOCALAPPDATA%\Buscaminas\mejores_tiempos_v2.json`.
+
 ### macOS
 
 Descarga `Buscaminas-macOS-Universal.zip`, descomprímelo y abre `Buscaminas.app`.
 
 El artefacto generado por GitHub Actions contiene un binario universal `arm64 + x86_64`. Actualmente el workflow aplica una **firma ad-hoc** para comprobar la integridad del bundle, pero la aplicación **no está notarizada por Apple ni firmada con un certificado Developer ID**. Por ello Gatekeeper puede bloquear la primera apertura de una copia descargada de Internet. Para una distribución pública sin avisos de Gatekeeper se necesita un certificado Apple Developer ID y notarización de Apple.
+
+Los récords se guardan en `~/Library/Application Support/Buscaminas/mejores_tiempos_v2.json`.
 
 ## Características
 
@@ -29,34 +33,33 @@ El artefacto generado por GitHub Actions contiene un binario universal `arm64 + 
 - Audio procedural generado en memoria.
 - Si el subsistema de audio no puede inicializarse, el juego continúa funcionando sin sonido.
 - Tabla de mejores tiempos persistente en JSON.
-- En macOS los récords se guardan en `~/Library/Application Support/Buscaminas/`.
 
 ## Compilar desde código
 
 Necesitas una instalación reciente de Rust.
 
 ```bash
-cargo build --release
+cargo build --locked --release
 ```
 
 Para ejecutar durante el desarrollo:
 
 ```bash
-cargo run --release
+cargo run --locked --release
 ```
 
 En Windows también se incluye `compilar_v2.bat` como acceso rápido.
 
 ## Calidad y CI
 
-Cada pull request y actualización de `main` ejecuta comprobaciones automáticas y genera builds nativos de Windows y macOS. El workflow valida formato, Clippy y tests antes del empaquetado.
+Cada pull request y actualización de `main` ejecuta comprobaciones automáticas antes de generar los builds nativos. La CI comprueba compilación con el `Cargo.lock`, ejecuta Clippy y los tests, y además informa de diferencias de formato con `rustfmt`.
 
 En macOS la CI compila por separado para:
 
 - `aarch64-apple-darwin`
 - `x86_64-apple-darwin`
 
-Después combina ambas arquitecturas con `lipo` y genera `Buscaminas.app`.
+Después combina ambas arquitecturas con `lipo`, valida el `Info.plist`, verifica el bundle con `codesign` y genera `Buscaminas.app`.
 
 ## Código fuente
 
