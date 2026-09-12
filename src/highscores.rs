@@ -53,22 +53,36 @@ impl HighScoreManager {
             .unwrap_or_else(|| PathBuf::from("."));
 
         #[cfg(target_os = "macos")]
-        let file_path = if let Ok(home) = std::env::var("HOME") {
-            let app_support = PathBuf::from(home)
-                .join("Library")
-                .join("Application Support")
-                .join("Buscaminas");
-            if fs::create_dir_all(&app_support).is_ok() {
-                app_support.join("mejores_tiempos_v2.json")
-            } else {
-                exe_dir.join("mejores_tiempos_v2.json")
-            }
-        } else {
-            exe_dir.join("mejores_tiempos_v2.json")
-        };
+        let file_path = user_data_file(
+            std::env::var_os("HOME").map(|home| {
+                PathBuf::from(home)
+                    .join("Library")
+                    .join("Application Support")
+                    .join("Buscaminas")
+            }),
+            &exe_dir,
+        );
 
-        #[cfg(not(target_os = "macos"))]
-        let file_path = exe_dir.join("mejores_tiempos_v2.json");
+        #[cfg(target_os = "windows")]
+        let file_path = user_data_file(
+            std::env::var_os("LOCALAPPDATA")
+                .map(PathBuf::from)
+                .map(|path| path.join("Buscaminas")),
+            &exe_dir,
+        );
+
+        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        let file_path = user_data_file(
+            std::env::var_os("XDG_DATA_HOME")
+                .map(PathBuf::from)
+                .or_else(|| {
+                    std::env::var_os("HOME")
+                        .map(PathBuf::from)
+                        .map(|path| path.join(".local").join("share"))
+                })
+                .map(|path| path.join("buscaminas")),
+            &exe_dir,
+        );
 
         let mut mgr = Self {
             data: HighScoreData::default(),
@@ -151,6 +165,15 @@ impl HighScoreManager {
     }
 }
 
+fn user_data_file(preferred_dir: Option<PathBuf>, exe_dir: &std::path::Path) -> PathBuf {
+    if let Some(dir) = preferred_dir {
+        if fs::create_dir_all(&dir).is_ok() {
+            return dir.join("mejores_tiempos_v2.json");
+        }
+    }
+    exe_dir.join("mejores_tiempos_v2.json")
+}
+
 fn current_utc_date() -> String {
     let days_since_epoch = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -190,6 +213,6 @@ mod tests {
 
     #[test]
     fn converts_known_2026_date() {
-        assert_eq!(civil_from_days(20_343), (2025, 9, 12));
+        assert_eq!(civil_from_days(20_708), (2026, 9, 12));
     }
 }
