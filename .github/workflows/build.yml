@@ -150,6 +150,62 @@ jobs:
           path: Buscaminas-macOS-Universal.zip
           if-no-files-found: error
 
+  build-linux:
+    name: Build Linux (x86_64)
+    needs: validate
+    # Se compila sobre 22.04 a proposito: enlaza contra una glibc mas antigua
+    # que la de ubuntu-latest, asi que el binario vale en mas distribuciones.
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux audio development library
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Linux Release
+        run: cargo build --locked --release
+
+      - name: Package Linux Binary
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp target/release/buscaminas_v2_rust dist/buscaminas
+          strip dist/buscaminas
+          chmod +x dist/buscaminas
+          tar -czf Buscaminas-Linux-x86_64.tar.gz -C dist buscaminas
+          ls -l dist/buscaminas Buscaminas-Linux-x86_64.tar.gz
+          ldd dist/buscaminas
+
+      - name: Smoke test under Xvfb
+        run: |
+          set -euo pipefail
+          # X11 y OpenGL los carga miniquad con dlopen, asi que solo hacen falta
+          # en ejecucion; Mesa da GL por software (llvmpipe) en el runner.
+          sudo apt-get install -y xvfb libx11-6 libgl1 libglx-mesa0
+          set +e
+          timeout 15s xvfb-run -a ./dist/buscaminas
+          code=$?
+          set -e
+          # timeout devuelve 124 cuando ha tenido que matar el proceso, que es
+          # justo lo que se busca: el juego seguia vivo. Cualquier otro codigo
+          # significa que se cayo solo (panico, segfault, salida temprana).
+          if [ "$code" -ne 124 ]; then
+            echo "::error::El binario no aguanto 15 s en ejecucion (codigo $code)"
+            exit 1
+          fi
+          echo "Arranco y se mantuvo 15 s sin ventana real ni tarjeta de sonido."
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Buscaminas-Linux
+          path: Buscaminas-Linux-x86_64.tar.gz
+          if-no-files-found: error
+
   build-windows:
     name: Build Windows (.exe)
     needs: validate
@@ -179,7 +235,7 @@ jobs:
 
   release:
     name: Publish Release Assets
-    needs: [build-macos, build-windows]
+    needs: [build-macos, build-windows, build-linux]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:

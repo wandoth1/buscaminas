@@ -1,6 +1,6 @@
-# 🦀 Buscaminas v2.3.0 (Rust · Windows & macOS)
+# 🦀 Buscaminas v2.4.0 (Rust · Windows, macOS & Linux)
 
-Versión del clásico **Buscaminas** reescrita en **Rust** con Macroquad. El mismo código fuente se compila de forma nativa para **Windows** y **macOS**, incluyendo un binario universal para **Apple Silicon e Intel**.
+Versión del clásico **Buscaminas** reescrita en **Rust** con Macroquad. El mismo código fuente se compila de forma nativa para **Windows**, **macOS** y **Linux**, incluyendo un binario universal para **Apple Silicon e Intel**.
 
 ## Descargas
 
@@ -19,6 +19,22 @@ Descarga `Buscaminas-macOS-Universal.zip`, descomprímelo y abre `Buscaminas.app
 El artefacto generado por GitHub Actions contiene un binario universal `arm64 + x86_64`. Actualmente el workflow aplica una **firma ad-hoc** para comprobar la integridad del bundle, pero la aplicación **no está notarizada por Apple ni firmada con un certificado Developer ID**. Por ello Gatekeeper puede bloquear la primera apertura de una copia descargada de Internet. Para una distribución pública sin avisos de Gatekeeper se necesita un certificado Apple Developer ID y notarización de Apple.
 
 Los récords se guardan en `~/Library/Application Support/Buscaminas/mejores_tiempos_v2.json` y los ajustes en `ajustes_v2.json`, en esa misma carpeta.
+
+### Linux
+
+Descarga `Buscaminas-Linux-x86_64.tar.gz`, descomprímelo y ejecuta el binario:
+
+```bash
+tar -xzf Buscaminas-Linux-x86_64.tar.gz
+./buscaminas
+```
+
+El binario se compila en Ubuntu 22.04, que enlaza contra una glibc más antigua que la de las versiones actuales, de modo que vale en más distribuciones. Necesita en tiempo de ejecución:
+
+- **X11** (`libX11.so.6`) y **OpenGL** (`libGL.so.1`), que miniquad carga con `dlopen` al arrancar. En Wayland funciona a través de XWayland.
+- **ALSA** (`libasound.so.2`), presente en cualquier escritorio con audio. Si no está o no hay tarjeta de sonido, el juego arranca igual y se queda sin sonido.
+
+Los récords se guardan en `$XDG_DATA_HOME/buscaminas/mejores_tiempos_v2.json` y los ajustes en `ajustes_v2.json`, en esa misma carpeta. Si `XDG_DATA_HOME` no está definida se usa `~/.local/share/buscaminas`.
 
 ## Características
 
@@ -67,6 +83,8 @@ En macOS la CI compila por separado para:
 - `x86_64-apple-darwin`
 
 Después combina ambas arquitecturas con `lipo`, valida el `Info.plist`, verifica el bundle con `codesign` y genera `Buscaminas.app`.
+
+En Linux, además de compilar, la CI arranca el binario resultante bajo `Xvfb` durante 15 segundos —sin ventana real ni tarjeta de sonido— y falla si no se mantiene en ejecución.
 
 ## Código fuente
 
