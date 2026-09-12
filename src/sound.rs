@@ -167,6 +167,9 @@ impl SoundManager {
 /// Volumen de la música, muy por debajo de los efectos para no taparlos.
 const MUSIC_VOLUME: f32 = 0.32;
 
+/// Tema con el que arranca el juego. `None` dejaría el arranque en silencio.
+const DEFAULT_TRACK: Option<MusicTrack> = Some(MusicTrack::Relax);
+
 /// Reproductor de los temas de fondo.
 ///
 /// Generar un tema cuesta unos 450 ms, demasiado para el hilo del juego: la
@@ -190,7 +193,7 @@ pub struct MusicManager {
 impl MusicManager {
     pub fn new() -> Self {
         let (tx, rx) = channel();
-        Self {
+        let mut manager = Self {
             tx,
             rx,
             relax: None,
@@ -198,22 +201,16 @@ impl MusicManager {
             requested: Vec::new(),
             wanted: None,
             active: None,
-        }
+        };
+        // Pide el tema por defecto ya: la generación se va haciendo en su hilo
+        // mientras el juego arranca, y `poll` lo engancha en cuanto esté.
+        manager.select(DEFAULT_TRACK);
+        manager
     }
 
     /// Tema seleccionado, sonando o a punto de sonar.
     pub fn selected(&self) -> Option<MusicTrack> {
         self.wanted
-    }
-
-    /// Activa un tema, o lo para si ya era el seleccionado.
-    pub fn toggle(&mut self, track: MusicTrack) {
-        let next = if self.wanted == Some(track) {
-            None
-        } else {
-            Some(track)
-        };
-        self.select(next);
     }
 
     /// Pide un tema concreto, o silencio con `None`.

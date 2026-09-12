@@ -220,11 +220,15 @@ async fn main() {
                 MenuAction::ToggleParticles => {
                     particles_enabled = !particles_enabled;
                 }
+                // Las tres entradas de música son un grupo excluyente.
                 MenuAction::MusicRelax => {
-                    music.toggle(MusicTrack::Relax);
+                    music.select(Some(MusicTrack::Relax));
                 }
                 MenuAction::MusicFocus => {
-                    music.toggle(MusicTrack::Focus);
+                    music.select(Some(MusicTrack::Focus));
+                }
+                MenuAction::MusicOff => {
+                    music.select(None);
                 }
                 MenuAction::OpenHelp => {
                     dialog = DialogState::Help;
